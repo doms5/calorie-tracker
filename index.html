@@ -3,7 +3,7 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitTrack</title>
+<title>FitTrack Pro</title>
 
 <link rel="manifest" href="manifest.json">
 
@@ -16,18 +16,19 @@
 
 <style>
 
-/* ===== APP BACKGROUND (iOS STYLE) ===== */
+/* ================= GLOBAL ================= */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   background: #f2f2f7;
+  color: #111;
 }
 
-/* HEADER (glass style) */
+/* HEADER */
 .header {
-  background: rgba(255,255,255,0.8);
-  backdrop-filter: blur(10px);
-  padding: 16px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(15px);
+  padding: 14px;
   font-size: 20px;
   font-weight: 700;
   text-align: center;
@@ -37,27 +38,27 @@ body {
 }
 
 /* PAGES */
-.page { display: none; padding-bottom: 80px; }
+.page { display: none; padding-bottom: 90px; }
 .active { display: block; }
 
-/* CARDS (APP STORE STYLE) */
+/* CARDS */
 .card {
   background: white;
   margin: 12px;
   padding: 16px;
-  border-radius: 20px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
 }
 
 /* TEXT */
 .big {
-  font-size: 36px;
+  font-size: 38px;
   font-weight: 800;
 }
 
 .small {
   font-size: 12px;
-  color: #888;
+  color: #777;
 }
 
 /* PROGRESS */
@@ -79,7 +80,7 @@ input {
   width: 100%;
   padding: 12px;
   margin-top: 10px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid #ddd;
   font-size: 16px;
 }
@@ -113,9 +114,9 @@ button {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  height: 64px;
   background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(15px);
   display: flex;
   border-top: 1px solid #ddd;
 }
@@ -123,7 +124,7 @@ button {
 .tab {
   flex: 1;
   text-align: center;
-  line-height: 60px;
+  line-height: 64px;
   font-size: 14px;
   font-weight: 600;
   color: #8e8e93;
@@ -131,16 +132,23 @@ button {
 
 .tab.active {
   color: #007aff;
+  border-top: 2px solid #007aff;
 }
 
-/* NOTIFICATION BANNER */
-.banner {
-  margin: 12px;
-  padding: 12px;
+/* SCANNER */
+#scanner {
+  width: 100%;
+  height: 300px;
   border-radius: 14px;
-  background: #fff4d6;
-  font-size: 13px;
-  display: none;
+  overflow: hidden;
+}
+
+/* WEEKLY */
+.week {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
 }
 
 </style>
@@ -149,13 +157,9 @@ button {
 
 <body>
 
-<div class="header">🔥 FitTrack</div>
+<div class="header">🔥 FitTrack Pro</div>
 
-<div id="notifyBanner" class="banner">
-  🔔 Reminder: Don’t forget to log your meals today
-</div>
-
-<!-- DASHBOARD -->
+<!-- ================= HOME ================= -->
 <div id="home" class="page active">
 
   <div class="card">
@@ -165,8 +169,6 @@ button {
     <div class="progress">
       <div class="fill" id="bar"></div>
     </div>
-
-    <button onclick="enableNotifications()">Enable Reminders 🔔</button>
   </div>
 
   <div class="card">
@@ -174,9 +176,14 @@ button {
     <div id="list"></div>
   </div>
 
+  <div class="card">
+    <div class="small">Weekly Trend</div>
+    <div id="week" class="week"></div>
+  </div>
+
 </div>
 
-<!-- SCAN -->
+<!-- ================= SCAN ================= -->
 <div id="scanPage" class="page">
 
   <div class="card">
@@ -192,21 +199,29 @@ button {
 
 </div>
 
-<!-- MEAL PLAN -->
+<!-- ================= MEALS ================= -->
 <div id="mealPage" class="page">
 
   <div class="card">
     <h3>Meal Plan</h3>
 
+    <h4>Breakfast</h4>
     <label><input type="checkbox" onchange="meal('Eggs',140)"> Eggs</label><br><br>
+    <label><input type="checkbox" onchange="meal('Oatmeal',150)"> Oatmeal</label>
+
+    <h4>Lunch</h4>
     <label><input type="checkbox" onchange="meal('Chicken',200)"> Chicken</label><br><br>
-    <label><input type="checkbox" onchange="meal('Rice',250)"> Rice</label><br><br>
-    <label><input type="checkbox" onchange="meal('Apple',95)"> Apple</label>
+    <label><input type="checkbox" onchange="meal('Rice',250)"> Rice</label>
+
+    <h4>Dinner</h4>
+    <label><input type="checkbox" onchange="meal('Salmon',300)"> Salmon</label><br><br>
+    <label><input type="checkbox" onchange="meal('Veggies',80)"> Veggies</label>
+
   </div>
 
 </div>
 
-<!-- TAB BAR -->
+<!-- ================= TAB ================= -->
 <div class="tabbar">
   <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scanPage')">Scan</div>
@@ -218,7 +233,7 @@ button {
 let items = JSON.parse(localStorage.getItem("foods") || "[]");
 const GOAL = 2000;
 
-/* ===== RENDER ===== */
+/* ================= RENDER ================= */
 function render() {
   let total = 0;
   const list = document.getElementById("list");
@@ -240,10 +255,10 @@ function render() {
 
   localStorage.setItem("foods", JSON.stringify(items));
 
-  checkReminder(total);
+  updateWeek(total);
 }
 
-/* ===== ADD FOOD ===== */
+/* ================= ADD FOOD ================= */
 function addFood(name, cal) {
   const food = name || document.getElementById("food").value;
   const calories = cal || document.getElementById("calories").value;
@@ -258,7 +273,7 @@ function addFood(name, cal) {
   render();
 }
 
-/* ===== SCANNER ===== */
+/* ================= SCANNER ================= */
 function startScan() {
   const scanner = document.getElementById("scanner");
   scanner.innerHTML = "";
@@ -277,7 +292,6 @@ function startScan() {
 
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
     const json = await res.json();
-
     const p = json.product || {};
 
     addFood(
@@ -287,12 +301,12 @@ function startScan() {
   });
 }
 
-/* ===== MEAL PLAN ===== */
+/* ================= MEALS ================= */
 function meal(name, cal) {
   addFood(name, cal);
 }
 
-/* ===== NAV ===== */
+/* ================= NAV ================= */
 function nav(page) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(page).classList.add("active");
@@ -301,31 +315,17 @@ function nav(page) {
   event.target.classList.add("active");
 }
 
-/* ===== NOTIFICATIONS ===== */
-function enableNotifications() {
-  Notification.requestPermission().then(p => {
-    if (p === "granted") {
-      alert("Reminders enabled 🔔");
-    }
-  });
-}
+/* ================= WEEKLY ================= */
+function updateWeek(today) {
+  let week = JSON.parse(localStorage.getItem("week") || "[]");
 
-function checkReminder(total) {
-  const banner = document.getElementById("notifyBanner");
+  week.push(today);
+  if (week.length > 7) week.shift();
 
-  if (total < 500) {
-    banner.style.display = "block";
-  } else {
-    banner.style.display = "none";
-  }
+  localStorage.setItem("week", JSON.stringify(week));
 
-  if (Notification.permission === "granted") {
-    if (total === 0) {
-      new Notification("FitTrack", {
-        body: "Start logging your meals today 🔥"
-      });
-    }
-  }
+  document.getElementById("week").innerHTML =
+    week.map(d => `<div>${d}</div>`).join("");
 }
 
 render();
