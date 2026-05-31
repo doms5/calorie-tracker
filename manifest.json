@@ -1,14 +1,19 @@
 {
-  "name": "FitTrack Pro",
+  "name": "FitTrack Elite",
   "short_name": "FitTrack",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#007aff",
+  "background_color": "#0b0f19",
+  "theme_color": "#0a84ff",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
