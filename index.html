@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FitTrack Elite v13 FIXED</title>
+<title>FitTrack Elite v14</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a84ff">
@@ -14,18 +14,21 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
 body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text";
-  background:#0b0f19;
+  background:linear-gradient(180deg,#0b0f19,#05070d);
   color:#f5f5f7;
 }
 
+/* APP */
 .app{max-width:430px;margin:0 auto;padding-bottom:90px;}
 
+/* HEADER */
 .header{
   position:sticky;
   top:0;
@@ -34,34 +37,39 @@ body{
   padding:14px;
   text-align:center;
   font-weight:600;
-  font-size:17px;
 }
 
-.page{display:none;}
+/* PAGES ANIMATION */
+.page{
+  display:none;
+  animation:fadeIn 0.25s ease;
+}
 .active{display:block;}
 
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(8px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* CARDS */
 .card{
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06);
   margin:12px;
   padding:16px;
   border-radius:16px;
+  transition:0.2s;
 }
 
+.card:active{transform:scale(0.99);}
+
+/* BIG NUMBER */
 .big{font-size:44px;font-weight:700;}
 
+/* SMALL */
 .small{font-size:13px;opacity:0.6;}
 
-input{
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  border-radius:12px;
-  border:none;
-  background:rgba(255,255,255,0.06);
-  color:white;
-}
-
+/* BUTTON */
 button{
   width:100%;
   padding:12px;
@@ -71,10 +79,14 @@ button{
   background:#0a84ff;
   color:white;
   font-weight:600;
+  transition:0.15s;
 }
+
+button:active{transform:scale(0.98);}
 
 .red{background:#ff453a;}
 
+/* ITEMS */
 .item{
   display:flex;
   justify-content:space-between;
@@ -82,47 +94,12 @@ button{
   border-bottom:1px solid rgba(255,255,255,0.06);
 }
 
+/* MEALS */
 .mealItem{
   display:flex;
-  align-items:center;
   gap:10px;
-  padding:12px 0;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-}
-
-input[type="checkbox"]{
-  width:18px;
-  height:18px;
-  accent-color:#0a84ff;
-}
-
-/* SCAN */
-.scanLine{
-  position:absolute;
-  left:0;
-  right:0;
-  height:2px;
-  background:linear-gradient(90deg,transparent,#0a84ff,transparent);
-  animation:scanMove 1.6s linear infinite;
-}
-
-@keyframes scanMove{
-  0%{transform:translateY(0);}
-  50%{transform:translateY(260px);}
-  100%{transform:translateY(0);}
-}
-
-#confirmModal{
-  position:fixed;
-  bottom:-400px;
-  left:0;
-  right:0;
-  background:rgba(28,28,30,0.95);
-  border-top-left-radius:20px;
-  border-top-right-radius:20px;
-  padding:16px;
-  transition:0.35s ease;
-  backdrop-filter:blur(20px);
+  align-items:center;
+  padding:10px 0;
 }
 
 /* TAB */
@@ -146,6 +123,39 @@ input[type="checkbox"]{
 
 .tab.active{color:#0a84ff;}
 
+/* SCANNER */
+.scanLine{
+  position:absolute;
+  height:2px;
+  left:0;
+  right:0;
+  background:linear-gradient(90deg,transparent,#0a84ff,transparent);
+  animation:scanMove 1.5s infinite;
+}
+
+@keyframes scanMove{
+  0%{transform:translateY(0);}
+  50%{transform:translateY(260px);}
+  100%{transform:translateY(0);}
+}
+
+/* MODAL */
+#modal{
+  position:fixed;
+  bottom:-400px;
+  left:0;
+  right:0;
+  background:rgba(28,28,30,0.95);
+  backdrop-filter:blur(20px);
+  padding:16px;
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  transition:0.3s;
+}
+
+/* CHART */
+canvas{margin-top:10px;}
+
 </style>
 
 </head>
@@ -154,7 +164,7 @@ input[type="checkbox"]{
 
 <div class="app">
 
-<div class="header">FitTrack Elite v13 FIXED</div>
+<div class="header">FitTrack v14</div>
 
 <!-- HOME -->
 <div id="home" class="page active">
@@ -163,8 +173,14 @@ input[type="checkbox"]{
     <div class="big" id="total">0</div>
     <div class="small">Calories Today</div>
     <div class="small">📅 <span id="date"></span></div>
+    <div class="small">🔥 Streak: <span id="streak">0</span> days</div>
 
     <button class="red" onclick="resetDay()">Reset Day</button>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:600">Weekly Progress</div>
+    <canvas id="chart"></canvas>
   </div>
 
   <div class="card">
@@ -177,14 +193,14 @@ input[type="checkbox"]{
 <div id="scan" class="page">
 
   <div class="card">
-    <div style="font-weight:700">Scan Food</div>
 
-    <div style="position:relative;height:260px;margin-top:10px;background:black;border-radius:16px;overflow:hidden">
+    <div style="position:relative;height:260px;background:black;border-radius:16px;overflow:hidden">
       <div id="scanner" style="width:100%;height:100%"></div>
       <div class="scanLine"></div>
     </div>
 
     <button onclick="startScan()">Start Scan</button>
+
   </div>
 
 </div>
@@ -193,27 +209,23 @@ input[type="checkbox"]{
 <div id="meals" class="page">
 
   <div class="card">
-    <div style="font-weight:700">Meal Plan</div>
+    <div style="font-weight:600">Meal Plan</div>
     <div class="small">📅 <span id="mealDate"></span></div>
   </div>
 
   <div class="card">
-    <div>Breakfast</div>
     <div id="breakfast"></div>
   </div>
 
   <div class="card">
-    <div>Lunch</div>
     <div id="lunch"></div>
   </div>
 
   <div class="card">
-    <div>Dinner</div>
     <div id="dinner"></div>
   </div>
 
   <div class="card">
-    <div>Snack</div>
     <div id="snack"></div>
   </div>
 
@@ -222,22 +234,16 @@ input[type="checkbox"]{
 </div>
 
 <!-- MODAL -->
-<div id="confirmModal">
-
-  <div style="font-weight:700">Confirm Food</div>
-
-  <div id="scanName" style="margin-top:10px"></div>
-
+<div id="modal">
+  <div id="scanName"></div>
   <input id="scanCalories" type="number">
-
   <button onclick="confirmAdd()">Add</button>
   <button class="red" onclick="closeModal()">Cancel</button>
-
 </div>
 
 <!-- TAB -->
 <div class="tabbar">
-  <div class="tab active" onclick="nav('home')">Home</div>
+  <div class="tab" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
   <div class="tab" onclick="nav('meals')">Meals</div>
 </div>
@@ -250,10 +256,10 @@ document.getElementById("date").innerText = new Date().toLocaleDateString();
 document.getElementById("mealDate").innerText = new Date().toLocaleDateString();
 
 /* DATA */
-let db = JSON.parse(localStorage.getItem("db") || "{}");
+let db = JSON.parse(localStorage.getItem("db")||"{}");
 if(!db[today]) db[today]=[];
 
-let meals = JSON.parse(localStorage.getItem("meals") || "null");
+let meals = JSON.parse(localStorage.getItem("meals")||"null");
 if(!meals){
   meals={
     breakfast:[{name:"Eggs",calories:140,done:false}],
@@ -263,22 +269,24 @@ if(!meals){
   };
 }
 
-let foodCache = JSON.parse(localStorage.getItem("foodCache") || "{}");
-let scanBuffer = null;
-let lastScannedCode = null;
+let cache = JSON.parse(localStorage.getItem("cache")||"{}");
 
-/* SAVE */
-function save(){localStorage.setItem("db",JSON.stringify(db));}
-function saveMeals(){localStorage.setItem("meals",JSON.stringify(meals));}
-function saveCache(){localStorage.setItem("foodCache",JSON.stringify(foodCache));}
+function save(){
+  localStorage.setItem("db",JSON.stringify(db));
+}
 
-/* HOME (FIXED TOTAL) */
+function saveMeals(){
+  localStorage.setItem("meals",JSON.stringify(meals));
+}
+
+function saveCache(){
+  localStorage.setItem("cache",JSON.stringify(cache));
+}
+
+/* HOME */
 function render(){
 
-  let total = db[today]
-    .map(i=>Number(i.calories||0))
-    .reduce((a,b)=>a+b,0);
-
+  let total = db[today].reduce((a,b)=>a+Number(b.calories||0),0);
   document.getElementById("total").innerText = total;
 
   const el=document.getElementById("list");
@@ -300,25 +308,18 @@ function resetDay(){
   render();
 }
 
-/* FIXED TOGGLE (THIS IS THE KEY BUG FIX) */
+/* STREAK (SIMPLE) */
+function updateStreak(){
+  let days = Object.keys(db).filter(d=>db[d].length>0);
+  document.getElementById("streak").innerText = days.length;
+}
+
+/* MEALS */
 function toggle(m,i){
+  meals[m][i].done=!meals[m][i].done;
 
-  const item = meals[m][i];
-  item.done = !item.done;
-
-  const cal = Number(item.calories || 0);
-
-  if(item.done){
-    db[today].push({
-      name:item.name,
-      calories:cal
-    });
-  } else {
-    const index = db[today].findIndex(x =>
-      x.name === item.name && Number(x.calories) === cal
-    );
-
-    if(index !== -1) db[today].splice(index,1);
+  if(meals[m][i].done){
+    db[today].push(meals[m][i]);
   }
 
   save();
@@ -327,11 +328,12 @@ function toggle(m,i){
   renderMeals();
 }
 
-/* MEALS */
+/* RENDER MEALS */
 function renderMeals(){
 
-  function fill(id,m){
-    const el=document.getElementById(id);
+  ["breakfast","lunch","dinner","snack"].forEach(m=>{
+
+    const el=document.getElementById(m);
     el.innerHTML="";
 
     meals[m].forEach((i,idx)=>{
@@ -340,20 +342,16 @@ function renderMeals(){
           <input type="checkbox"
                  ${i.done?'checked':''}
                  onchange="toggle('${m}',${idx})">
-
           <span style="flex:1">${i.name}</span>
           <span>${i.calories}</span>
         </div>`;
     });
-  }
-
-  fill("breakfast","breakfast");
-  fill("lunch","lunch");
-  fill("dinner","dinner");
-  fill("snack","snack");
+  });
 }
 
 /* SCANNER */
+let buffer=null;
+
 function startScan(){
 
   const scanner=document.getElementById("scanner");
@@ -371,10 +369,9 @@ function startScan(){
     Quagga.stop();
 
     const code=d.codeResult.code;
-    lastScannedCode = code;
 
-    if(foodCache[code]){
-      openModal(foodCache[code]);
+    if(cache[code]){
+      open(cache[code]);
       return;
     }
 
@@ -388,38 +385,61 @@ function startScan(){
     if(n["energy-kcal_100g"]) kcal=n["energy-kcal_100g"];
     else if(n["energy_100g"]) kcal=n["energy_100g"]/4.184;
 
-    kcal=Math.round(kcal||0);
+    const food={
+      name:p.product_name||"Food",
+      calories:Math.round(kcal||0)
+    };
 
-    const food={name:p.product_name||"Food",calories:kcal};
-
-    foodCache[code]=food;
+    cache[code]=food;
     saveCache();
 
-    openModal(food);
+    open(food);
   });
 }
 
 /* MODAL */
-function openModal(data){
+function open(data){
+  buffer=data;
   document.getElementById("scanName").innerText=data.name;
   document.getElementById("scanCalories").value=data.calories;
-  document.getElementById("confirmModal").style.bottom="0";
+  document.getElementById("modal").style.bottom="0";
 }
 
 function closeModal(){
-  document.getElementById("confirmModal").style.bottom="-400px";
+  document.getElementById("modal").style.bottom="-400px";
 }
 
 function confirmAdd(){
 
   db[today].push({
-    name:document.getElementById("scanName").innerText,
-    calories:Number(document.getElementById("scanCalories").value||0)
+    name:buffer.name,
+    calories:Number(document.getElementById("scanCalories").value)
   });
 
   save();
   render();
+  updateStreak();
   closeModal();
+}
+
+/* CHART */
+function loadChart(){
+
+  let labels=[];
+  let data=[];
+
+  Object.keys(db).slice(-7).forEach(d=>{
+    labels.push(d);
+    data.push(db[d].reduce((a,b)=>a+Number(b.calories||0),0));
+  });
+
+  new Chart(document.getElementById("chart"),{
+    type:"line",
+    data:{
+      labels:labels,
+      datasets:[{data:data}]
+    }
+  });
 }
 
 /* NAV */
@@ -431,6 +451,8 @@ function nav(p){
 /* INIT */
 render();
 renderMeals();
+loadChart();
+updateStreak();
 
 </script>
 
