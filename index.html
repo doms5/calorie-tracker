@@ -1,12 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calorie Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Tracker</title>
 </head>
-<body>
-    <h1>Calorie Tracker</h1>
-    <p>Welcome to the Calorie Tracker application.</p>
+
+<body style="font-family: Arial; padding: 20px;">
+
+  <h1>🔥 Calorie Tracker</h1>
+
+  <input id="food" placeholder="Food" style="display:block;margin-bottom:10px;">
+  <input id="calories" placeholder="Calories" type="number" style="display:block;margin-bottom:10px;">
+
+  <button onclick="addFood()">Add Food</button>
+  <button onclick="resetAll()">Reset</button>
+
+  <h2 style="margin-top:20px;">Today</h2>
+
+  <div id="list"></div>
+
+  <h2 id="total">Total: 0</h2>
+
+<script>
+let items = JSON.parse(localStorage.getItem("foods") || "[]")
+
+function render() {
+  const list = document.getElementById("list")
+  list.innerHTML = ""
+
+  let total = 0
+
+  items.forEach((item, i) => {
+    total += item.calories
+    list.innerHTML += `<div>${item.name} — ${item.calories} kcal</div>`
+  })
+
+  document.getElementById("total").innerText = "Total: " + total
+  localStorage.setItem("foods", JSON.stringify(items))
+}
+
+function addFood() {
+  const food = document.getElementById("food").value
+  const calories = document.getElementById("calories").value
+
+  if (!food || !calories) return
+
+  items.push({
+    name: food,
+    calories: Number(calories)
+  })
+
+  document.getElementById("food").value = ""
+  document.getElementById("calories").value = ""
+
+  render()
+}
+
+function resetAll() {
+  items = []
+  localStorage.removeItem("foods")
+  render()
+}
+
+render()
+</script>
+
 </body>
 </html>
