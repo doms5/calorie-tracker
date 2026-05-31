@@ -72,6 +72,7 @@ input {
   margin-top: 10px;
   border-radius: 12px;
   border: 1px solid #ddd;
+  font-size: 16px;
 }
 
 button {
@@ -88,6 +89,17 @@ button {
 .green { background:#34c759; }
 .red { background:#ff3b30; }
 
+/* SMALL RESET BUTTON */
+.smallBtn {
+  width: 40%;
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 10px;
+  background: #ff3b30;
+  margin-top: 10px;
+}
+
+/* ITEM LIST */
 .item {
   display:flex;
   justify-content:space-between;
@@ -135,14 +147,21 @@ button {
 <div id="home" class="page active">
 
   <div class="card">
-    <div class="big" id="total">0 calories</div>
-    <div class="small">Today: <span id="date"></span></div>
 
-    <div class="progress">
+    <div class="big" id="total">0 calories</div>
+
+    <div class="small">
+      Goal:
+      <input id="goalInput" type="number" style="width:90px;display:inline-block;padding:4px;margin-left:6px;" onchange="updateGoal()">
+    </div>
+
+    <div class="progress" style="margin-top:10px;">
       <div class="fill" id="bar"></div>
     </div>
 
-    <button onclick="resetDay()" class="red">Reset Today</button>
+    <!-- SMALL RESET BUTTON -->
+    <button class="smallBtn" onclick="resetDay()">Reset Day</button>
+
   </div>
 
   <div class="card">
@@ -171,26 +190,20 @@ button {
 <div id="mealPage" class="page">
 
   <div class="card">
-    <h3>Breakfast</h3>
-    <label><input type="checkbox" onchange="meal('Eggs',140)"> Eggs</label><br>
+    <h3>Meal Plan</h3>
+
+    <h4>Breakfast</h4>
+    <label><input type="checkbox" onchange="meal('Eggs',140)"> Eggs</label><br><br>
     <label><input type="checkbox" onchange="meal('Oatmeal',150)"> Oatmeal</label>
-  </div>
 
-  <div class="card">
-    <h3>Lunch</h3>
-    <label><input type="checkbox" onchange="meal('Chicken',200)"> Chicken</label><br>
+    <h4>Lunch</h4>
+    <label><input type="checkbox" onchange="meal('Chicken',200)"> Chicken</label><br><br>
     <label><input type="checkbox" onchange="meal('Rice',250)"> Rice</label>
-  </div>
 
-  <div class="card">
-    <h3>Dinner</h3>
-    <label><input type="checkbox" onchange="meal('Salmon',300)"> Salmon</label><br>
+    <h4>Dinner</h4>
+    <label><input type="checkbox" onchange="meal('Salmon',300)"> Salmon</label><br><br>
     <label><input type="checkbox" onchange="meal('Veggies',80)"> Veggies</label>
-  </div>
 
-  <div class="card">
-    <h3>Snack</h3>
-    <label><input type="checkbox" onchange="meal('Protein Bar',180)"> Protein Bar</label>
   </div>
 
 </div>
@@ -204,44 +217,49 @@ button {
 
 <script>
 
-const GOAL = 2000;
 const today = new Date().toISOString().split("T")[0];
 
 let db = JSON.parse(localStorage.getItem("db") || "{}");
-
 if (!db[today]) db[today] = [];
 
-document.getElementById("date").innerText = today;
+if (!db.goal) db.goal = 2000;
 
+document.getElementById("goalInput").value = db.goal;
+
+/* SAVE */
 function save() {
   localStorage.setItem("db", JSON.stringify(db));
 }
 
-function getToday() {
-  return db[today];
+/* UPDATE GOAL */
+function updateGoal() {
+  db.goal = Number(document.getElementById("goalInput").value);
+  save();
+  render();
 }
 
 /* RENDER */
 function render() {
-  let list = document.getElementById("list");
+  let total = 0;
+  const list = document.getElementById("list");
   list.innerHTML = "";
 
-  let total = 0;
-
-  getToday().forEach((item, index) => {
+  db[today].forEach((item, i) => {
     total += item.calories;
 
     list.innerHTML += `
       <div class="item">
         <span>${item.name}</span>
         <span>${item.calories} cal</span>
-        <span class="delete" onclick="removeItem(${index})">delete</span>
+        <span class="delete" onclick="removeItem(${i})">delete</span>
       </div>
     `;
   });
 
   document.getElementById("total").innerText = total + " calories";
-  document.getElementById("bar").style.width = Math.min((total/GOAL)*100,100) + "%";
+
+  const percent = Math.min((total / db.goal) * 100, 100);
+  document.getElementById("bar").style.width = percent + "%";
 
   save();
 }
@@ -261,9 +279,9 @@ function addFood(name, cal) {
   render();
 }
 
-/* DELETE ITEM */
-function removeItem(index) {
-  db[today].splice(index, 1);
+/* DELETE */
+function removeItem(i) {
+  db[today].splice(i, 1);
   render();
 }
 
@@ -273,35 +291,7 @@ function resetDay() {
   render();
 }
 
-/* SCAN */
-function startScan() {
-  const scanner = document.getElementById("scanner");
-  scanner.innerHTML = "";
-
-  Quagga.init({
-    inputStream: { type:"LiveStream", target:scanner },
-    decoder: { readers:["ean_reader","upc_reader"] }
-  }, err => {
-    if (err) return alert(err);
-    Quagga.start();
-  });
-
-  Quagga.onDetected(async data => {
-    const code = data.codeResult.code;
-    Quagga.stop();
-
-    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
-    const json = await res.json();
-    const p = json.product || {};
-
-    addFood(
-      p.product_name || "Food",
-      p?.nutriments?.["energy-kcal_100g"] || 0
-    );
-  });
-}
-
-/* MEAL PLAN */
+/* MEAL */
 function meal(name, cal) {
   addFood(name, cal);
 }
