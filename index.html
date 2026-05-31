@@ -6,26 +6,105 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
+  background: #f2f2f7;
+}
+
+.header {
+  padding: 20px;
+  background: white;
+  font-size: 22px;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+}
+
+.card {
+  background: white;
+  margin: 12px;
+  padding: 15px;
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  background: #007aff;
+  color: white;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #34c759;
+}
+
+button.danger {
+  background: #ff3b30;
+}
+
+.item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+}
+
+.total {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#scanner {
+  width: 100%;
+  height: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+</style>
 </head>
 
-<body style="font-family: Arial; padding: 20px; background:#f5f5f5;">
+<body>
 
-<h1>🔥 Fitness Tracker</h1>
+<div class="header">🔥 Calorie Tracker</div>
 
-<input id="food" placeholder="Food name" style="display:block;margin-bottom:10px;padding:8px;">
-<input id="calories" placeholder="Calories" type="number" style="display:block;margin-bottom:10px;padding:8px;">
+<div class="card">
+  <div class="total" id="total">0 kcal today</div>
+</div>
 
-<button onclick="addFood()">Add Food</button>
-<button onclick="startScanner()">Scan Barcode</button>
-<button onclick="resetAll()">Reset</button>
+<div class="card">
+  <input id="food" class="input" placeholder="Food name">
+  <input id="calories" class="input" placeholder="Calories" type="number">
 
-<h2 style="margin-top:20px;">Today</h2>
+  <button onclick="addFood()">Add Food</button>
+  <button class="secondary" onclick="startScanner()">Scan Barcode</button>
+  <button class="danger" onclick="resetAll()">Reset</button>
+</div>
 
-<div id="list"></div>
+<div class="card">
+  <h3>Today’s Foods</h3>
+  <div id="list"></div>
+</div>
 
-<h2 id="total">Total: 0 kcal</h2>
-
-<div id="scanner" style="width:100%; height:300px; margin-top:10px;"></div>
+<div class="card">
+  <div id="scanner"></div>
+</div>
 
 <script>
 let items = JSON.parse(localStorage.getItem("foods") || "[]")
@@ -37,10 +116,16 @@ function render() {
 
   items.forEach(item => {
     total += item.calories
-    list.innerHTML += `<div>${item.name} — ${item.calories} kcal</div>`
+
+    list.innerHTML += `
+      <div class="item">
+        <span>${item.name}</span>
+        <span>${item.calories} kcal</span>
+      </div>
+    `
   })
 
-  document.getElementById("total").innerText = "Total: " + total + " kcal"
+  document.getElementById("total").innerText = total + " kcal today"
   localStorage.setItem("foods", JSON.stringify(items))
 }
 
@@ -50,7 +135,10 @@ function addFood(name, cal) {
 
   if (!food || !calories) return
 
-  items.push({ name: food, calories: Number(calories) })
+  items.push({
+    name: food,
+    calories: Number(calories)
+  })
 
   document.getElementById("food").value = ""
   document.getElementById("calories").value = ""
@@ -67,7 +155,6 @@ function resetAll() {
 function startScanner() {
   Quagga.init({
     inputStream: {
-      name: "Live",
       type: "LiveStream",
       target: document.querySelector('#scanner'),
       constraints: {
@@ -87,22 +174,16 @@ function startScanner() {
 
   Quagga.onDetected(async function(data) {
     const code = data.codeResult.code
-
     Quagga.stop()
 
-    document.getElementById("scanner").innerHTML = ""
-
-    // FETCH FOOD DATA
     const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
     const json = await res.json()
 
     const product = json.product
-
-    const name = product?.product_name || "Unknown food"
+    const name = product?.product_name || "Unknown Food"
     const cal = product?.nutriments?.energy_kcal_100g || 0
 
     addFood(name, cal)
-
     alert("Added: " + name)
   })
 }
