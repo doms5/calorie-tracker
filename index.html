@@ -81,6 +81,7 @@ button {
 .delete {
   color:#fb7185;
   font-size:12px;
+  cursor:pointer;
 }
 
 .tabbar {
@@ -116,6 +117,13 @@ button {
 <!-- HOME -->
 <div id="home" class="page active">
 
+  <!-- SMART SUGGESTIONS -->
+  <div class="card">
+    <div style="font-weight:700">🧠 Smart Suggestions</div>
+    <div style="font-size:12px;opacity:0.7">Based on remaining calories</div>
+    <div id="suggestions" style="margin-top:10px"></div>
+  </div>
+
   <div class="card">
     <div class="big" id="total">0</div>
     <div>Calories Today</div>
@@ -123,7 +131,7 @@ button {
       📅 <span id="date"></span>
     </div>
 
-    <input id="goal" type="number" placeholder="Set daily goal (optional)">
+    <input id="goal" type="number" placeholder="Set daily goal (2000 default)">
   </div>
 
   <div class="card">
@@ -141,15 +149,12 @@ button {
   </div>
 
   <div class="card">
-
     <input id="food" placeholder="Food name">
     <input id="cal" type="number" placeholder="Calories">
     <input id="pro" type="number" placeholder="Protein">
     <input id="car" type="number" placeholder="Carbs">
     <input id="fat" type="number" placeholder="Fat">
-
     <button onclick="addManual()">Add Food</button>
-
   </div>
 
 </div>
@@ -171,7 +176,7 @@ button {
 
 </div>
 
-<!-- TAB BAR -->
+<!-- TAB -->
 <div class="tabbar">
   <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
@@ -183,10 +188,8 @@ button {
 const today = new Date().toISOString().split("T")[0];
 
 let db = JSON.parse(localStorage.getItem("db") || "{}");
-
 if (!db[today]) db[today] = [];
 
-/* INIT DATE */
 document.getElementById("date").innerText = today;
 
 /* SAVE */
@@ -194,35 +197,32 @@ function save(){
   localStorage.setItem("db", JSON.stringify(db));
 }
 
-/* ADD MANUAL FOOD */
+/* GOAL */
+function getGoal(){
+  return Number(document.getElementById("goal").value || 2000);
+}
+
+/* ADD MANUAL */
 function addManual(){
 
-  if(!food.value || !cal.value) return;
-
   db[today].push({
-    name: food.value,
-    calories: Number(cal.value),
-    protein: Number(pro.value||0),
-    carbs: Number(car.value||0),
-    fat: Number(fat.value||0)
+    name:food.value,
+    calories:Number(cal.value||0),
+    protein:Number(pro.value||0),
+    carbs:Number(car.value||0),
+    fat:Number(fat.value||0)
   });
-
-  food.value="";
-  cal.value="";
-  pro.value="";
-  car.value="";
-  fat.value="";
 
   save();
   render();
+  renderSuggestions();
 }
 
 /* MEAL */
 function meal(n,c){
-
   db[today].push({
     name:n,
-    calories:Number(c),
+    calories:c,
     protein:0,
     carbs:0,
     fat:0
@@ -230,6 +230,7 @@ function meal(n,c){
 
   save();
   render();
+  renderSuggestions();
 }
 
 /* DELETE */
@@ -237,9 +238,10 @@ function del(i){
   db[today].splice(i,1);
   save();
   render();
+  renderSuggestions();
 }
 
-/* RENDER (FIXED — THIS IS THE IMPORTANT PART) */
+/* RENDER */
 function render(){
 
   let total = 0;
@@ -247,8 +249,7 @@ function render(){
 
   listEl.innerHTML = "";
 
-  db[today].forEach((i, idx) => {
-
+  db[today].forEach((i,idx)=>{
     total += Number(i.calories || 0);
 
     listEl.innerHTML += `
@@ -263,7 +264,76 @@ function render(){
   document.getElementById("total").innerText = total;
 }
 
-/* BARCODE SCAN (STABLE VERSION) */
+/* =========================
+   SMART SUGGESTIONS ENGINE
+========================= */
+
+const smartMeals = [
+  { name:"Eggs + Toast", calories:260 },
+  { name:"Chicken Rice Bowl", calories:450 },
+  { name:"Protein Shake", calories:180 },
+  { name:"Salmon + Veggies", calories:400 },
+  { name:"Greek Yogurt", calories:200 },
+  { name:"Turkey Sandwich", calories:350 }
+];
+
+function getTodayTotal(){
+  let t = 0;
+  db[today].forEach(i => t += Number(i.calories || 0));
+  return t;
+}
+
+function renderSuggestions(){
+
+  const remaining = getGoal() - getTodayTotal();
+  const box = document.getElementById("suggestions");
+
+  if(!box) return;
+
+  box.innerHTML = "";
+
+  if(remaining <= 0){
+    box.innerHTML = "🎉 Goal reached!";
+    return;
+  }
+
+  smartMeals
+    .filter(m => m.calories <= remaining + 150)
+    .slice(0,4)
+    .forEach(m => {
+
+      box.innerHTML += `
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          padding:8px 0;
+          border-bottom:1px solid rgba(255,255,255,0.1);
+          cursor:pointer;
+        "
+        onclick="quickAdd('${m.name}',${m.calories})">
+          <span>${m.name}</span>
+          <span>${m.calories}</span>
+        </div>
+      `;
+    });
+}
+
+function quickAdd(name,calories){
+
+  db[today].push({
+    name,
+    calories,
+    protein:0,
+    carbs:0,
+    fat:0
+  });
+
+  save();
+  render();
+  renderSuggestions();
+}
+
+/* SCANNER */
 let scanning = false;
 
 function startScan(){
@@ -274,23 +344,14 @@ function startScan(){
   const scanner = document.getElementById("scanner");
 
   Quagga.init({
-    inputStream: {
-      type: "LiveStream",
-      target: scanner,
-      constraints: { facingMode: "environment" }
-    },
-    decoder: {
-      readers: ["ean_reader", "upc_reader"]
-    }
-  }, err => {
-    if(err) {
-      scanning = false;
-      return alert(err);
-    }
+    inputStream:{type:"LiveStream",target:scanner},
+    decoder:{readers:["ean_reader","upc_reader"]}
+  },err=>{
+    if(err){ scanning=false; return alert(err); }
     Quagga.start();
   });
 
-  Quagga.onDetected(async data => {
+  Quagga.onDetected(async data=>{
 
     if(!scanning) return;
     scanning = false;
@@ -305,26 +366,28 @@ function startScan(){
     const p = json.product || {};
 
     db[today].push({
-      name: p.product_name || "Scanned Food",
-      calories: Number(p?.nutriments?.["energy-kcal_100g"] || 0),
-      protein: 0,
-      carbs: 0,
-      fat: 0
+      name:p.product_name || "Scanned Food",
+      calories:Number(p?.nutriments?.["energy-kcal_100g"] || 0),
+      protein:0,
+      carbs:0,
+      fat:0
     });
 
     save();
     render();
+    renderSuggestions();
   });
 }
 
 /* NAV */
-function nav(page){
-
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(page).classList.add("active");
+function nav(p){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(p).classList.add("active");
 }
 
+/* INIT */
 render();
+renderSuggestions();
 
 </script>
 
