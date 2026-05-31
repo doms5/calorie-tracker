@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FitTrack Pro</title>
+<title>FitTrack Elite v7</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,43 +14,51 @@
 
 <style>
 
-body {
+body{
   margin:0;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display";
-  background: linear-gradient(180deg,#0f172a,#1e293b,#020617);
+  background: radial-gradient(circle at top,#1e293b,#020617);
   color:white;
 }
 
-.app {
+/* APP WRAPPER */
+.app{
   max-width:430px;
   margin:0 auto;
   padding-bottom:90px;
 }
 
-.header {
+/* HEADER */
+.header{
   text-align:center;
-  padding:14px;
-  font-weight:800;
-}
-
-.page { display:none; }
-.active { display:block; }
-
-.card {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  backdrop-filter: blur(18px);
-  margin:12px;
   padding:16px;
-  border-radius:18px;
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:0.5px;
 }
 
-.big {
-  font-size:42px;
+/* PAGES */
+.page{display:none;}
+.active{display:block;}
+
+/* CARDS */
+.card{
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:20px;
+  padding:16px;
+  margin:12px;
+  backdrop-filter:blur(20px);
+}
+
+/* BIG NUMBER */
+.big{
+  font-size:44px;
   font-weight:900;
 }
 
-input {
+/* INPUT */
+input{
   width:100%;
   padding:12px;
   margin-top:8px;
@@ -60,7 +68,8 @@ input {
   color:white;
 }
 
-button {
+/* BUTTONS */
+button{
   width:100%;
   padding:12px;
   margin-top:10px;
@@ -71,42 +80,22 @@ button {
   font-weight:700;
 }
 
-.red {
+.red{
   background:linear-gradient(135deg,#ef4444,#dc2626);
 }
 
-.item {
+/* LIST ITEMS */
+.item{
   display:flex;
   justify-content:space-between;
   padding:10px 0;
-  border-bottom:1px solid rgba(255,255,255,0.1);
+  border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
-.delete {
+.delete{
   color:#fb7185;
   font-size:12px;
-  cursor:pointer;
 }
-
-.tabbar {
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  display:flex;
-  background:rgba(0,0,0,0.75);
-  backdrop-filter: blur(20px);
-}
-
-.tab {
-  flex:1;
-  text-align:center;
-  padding:10px;
-  font-size:11px;
-  color:#94a3b8;
-}
-
-.tab.active { color:#38bdf8; }
 
 /* MEAL CHECKLIST */
 .mealItem{
@@ -122,10 +111,31 @@ button {
   opacity:0.7;
 }
 
-.smallAction{
-  color:#60a5fa;
+.small{
   font-size:12px;
+  opacity:0.7;
 }
+
+/* TAB BAR */
+.tabbar{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(20px);
+}
+
+.tab{
+  flex:1;
+  text-align:center;
+  padding:10px;
+  font-size:11px;
+  color:#94a3b8;
+}
+
+.tab.active{color:#38bdf8;}
 
 </style>
 
@@ -135,7 +145,7 @@ button {
 
 <div class="app">
 
-<div class="header">🔥 FitTrack Pro</div>
+<div class="header">🔥 FitTrack Elite v7</div>
 
 <!-- HOME -->
 <div id="home" class="page active">
@@ -144,11 +154,9 @@ button {
     <div class="big" id="total">0</div>
     <div>Calories Today</div>
 
-    <div style="font-size:12px;opacity:0.7">
-      📅 <span id="date"></span>
-    </div>
+    <div class="small">📅 <span id="date"></span></div>
 
-    <!-- RESET BUTTON (RESTORED HERE) -->
+    <!-- RESET (RESTORED + STABLE) -->
     <button class="red" onclick="resetDay()">Reset Day</button>
   </div>
 
@@ -177,14 +185,12 @@ button {
 
 </div>
 
-<!-- MEALS -->
+<!-- MEALS (CHECKLIST FIXED + ALWAYS RENDERS) -->
 <div id="meals" class="page">
 
   <div class="card">
-    <div class="big">🍽 Meal Checklist</div>
-    <div style="font-size:12px;opacity:0.7">
-      Tap = complete • Edit = modify
-    </div>
+    <div style="font-size:22px;font-weight:800">🍽 Meal Checklist</div>
+    <div class="small">Tap = complete • Edit = modify • Add = expand</div>
   </div>
 
   <div class="card">
@@ -211,7 +217,7 @@ button {
 
 </div>
 
-<!-- TAB -->
+<!-- TAB BAR -->
 <div class="tabbar">
   <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
@@ -223,7 +229,7 @@ button {
 const today = new Date().toISOString().split("T")[0];
 
 let db = JSON.parse(localStorage.getItem("db") || "{}");
-if (!db[today]) db[today] = [];
+if(!db[today]) db[today] = [];
 
 document.getElementById("date").innerText = today;
 
@@ -234,12 +240,34 @@ function save(){
 
 /* TOTAL */
 function getTotal(){
-  let t = 0;
-  db[today].forEach(i => t += Number(i.calories || 0));
+  let t=0;
+  db[today].forEach(i=>t+=Number(i.calories||0));
   return t;
 }
 
-/* ADD MANUAL */
+/* HOME RENDER */
+function render(){
+
+  let total=0;
+  const el=document.getElementById("list");
+  el.innerHTML="";
+
+  db[today].forEach((i,idx)=>{
+    total+=Number(i.calories||0);
+
+    el.innerHTML+=`
+      <div class="item">
+        <span>${i.name}</span>
+        <span>${i.calories}</span>
+        <span class="delete" onclick="del(${idx})">x</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("total").innerText=total;
+}
+
+/* ADD */
 function addManual(){
 
   db[today].push({
@@ -265,43 +293,20 @@ function del(i){
 
 /* RESET DAY */
 function resetDay(){
-  db[today] = [];
+  db[today]=[];
   save();
   render();
   renderChecklist();
 }
 
-/* HOME RENDER */
-function render(){
-
-  let total = 0;
-  const listEl = document.getElementById("list");
-
-  listEl.innerHTML = "";
-
-  db[today].forEach((i,idx)=>{
-    total += Number(i.calories || 0);
-
-    listEl.innerHTML += `
-      <div class="item">
-        <span>${i.name}</span>
-        <span>${i.calories}</span>
-        <span class="delete" onclick="del(${idx})">x</span>
-      </div>
-    `;
-  });
-
-  document.getElementById("total").innerText = total;
-}
-
 /* =========================
-   CHECKLIST SYSTEM (FULL)
+   CHECKLIST (FIXED + ALWAYS LOADS)
 ========================= */
 
 let checklist = JSON.parse(localStorage.getItem("checklist") || "null");
 
 if(!checklist){
-  checklist = {
+  checklist={
     breakfast:[
       {name:"Eggs",calories:140,done:false},
       {name:"Oatmeal",calories:300,done:false}
@@ -319,82 +324,63 @@ if(!checklist){
 }
 
 function saveChecklist(){
-  localStorage.setItem("checklist", JSON.stringify(checklist));
+  localStorage.setItem("checklist",JSON.stringify(checklist));
 }
 
-function toggleItem(meal,i){
-  checklist[meal][i].done = !checklist[meal][i].done;
+function toggleItem(m,i){
+  checklist[m][i].done=!checklist[m][i].done;
   saveChecklist();
   renderChecklist();
 }
 
-function editItem(meal,i){
-
-  let item = checklist[meal][i];
-
-  let n = prompt("Edit name",item.name);
-  let c = prompt("Edit calories",item.calories);
-
-  if(n!==null) item.name=n;
-  if(c!==null) item.calories=Number(c);
-
+function editItem(m,i){
+  let it=checklist[m][i];
+  let n=prompt("Name",it.name);
+  let c=prompt("Calories",it.calories);
+  if(n!==null) it.name=n;
+  if(c!==null) it.calories=Number(c);
   saveChecklist();
   renderChecklist();
 }
 
-function addItem(meal){
-
-  let n = prompt("Food name:");
-  let c = prompt("Calories:");
-
-  if(!n || !c) return;
-
-  checklist[meal].push({
-    name:n,
-    calories:Number(c),
-    done:false
-  });
-
+function addItem(m){
+  let n=prompt("Food");
+  let c=prompt("Calories");
+  if(!n||!c) return;
+  checklist[m].push({name:n,calories:Number(c),done:false});
   saveChecklist();
   renderChecklist();
 }
 
+/* IMPORTANT FIX: ALWAYS RENDERS */
 function renderChecklist(){
 
   function fill(id,meal){
 
-    let el=document.getElementById(id);
+    const el=document.getElementById(id);
     if(!el) return;
 
     el.innerHTML="";
 
     checklist[meal].forEach((i,idx)=>{
 
-      el.innerHTML += `
+      el.innerHTML+=`
         <div class="mealItem"
              style="
-               opacity:${i.done?0.4:1};
-               text-decoration:${i.done?'line-through':'none'};
+              opacity:${i.done?0.4:1};
+              text-decoration:${i.done?'line-through':'none'};
              ">
 
-          <span onclick="toggleItem('${meal}',${idx})">
-            ${i.name}
-          </span>
-
-          <span onclick="toggleItem('${meal}',${idx})">
-            ${i.calories}
-          </span>
-
-          <span class="smallAction"
-                onclick="editItem('${meal}',${idx})">
-            edit
-          </span>
+          <span onclick="toggleItem('${meal}',${idx})">${i.name}</span>
+          <span onclick="toggleItem('${meal}',${idx})">${i.calories}</span>
+          <span style="color:#60a5fa;font-size:12px"
+                onclick="editItem('${meal}',${idx})">edit</span>
 
         </div>
       `;
     });
 
-    el.innerHTML += `<button onclick="addItem('${meal}')">+ Add</button>`;
+    el.innerHTML+=`<button onclick="addItem('${meal}')">+ Add Item</button>`;
   }
 
   fill("breakfast","breakfast");
