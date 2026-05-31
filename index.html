@@ -5,13 +5,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FitTrack Elite v14</title>
+<title>FitTrack v15</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a84ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-192.png">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -20,9 +19,9 @@
 
 body{
   margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text";
-  background:linear-gradient(180deg,#0b0f19,#05070d);
-  color:#f5f5f7;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text";
+  background:#0b0f19;
+  color:white;
 }
 
 /* APP */
@@ -30,86 +29,106 @@ body{
 
 /* HEADER */
 .header{
-  position:sticky;
-  top:0;
+  text-align:center;
+  padding:12px;
+  font-weight:600;
   background:rgba(20,20,25,0.7);
   backdrop-filter:blur(20px);
-  padding:14px;
-  text-align:center;
-  font-weight:600;
+  position:sticky;
+  top:0;
 }
 
-/* PAGES ANIMATION */
-.page{
-  display:none;
-  animation:fadeIn 0.25s ease;
-}
-.active{display:block;}
+/* PAGES */
+.page{display:none;}
+.active{display:block;animation:fade .2s ease;}
 
-@keyframes fadeIn{
+@keyframes fade{
   from{opacity:0;transform:translateY(8px);}
   to{opacity:1;transform:translateY(0);}
 }
 
 /* CARDS */
 .card{
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.06);
   margin:12px;
   padding:16px;
-  border-radius:16px;
-  transition:0.2s;
+  border-radius:18px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06);
 }
 
-.card:active{transform:scale(0.99);}
-
-/* BIG NUMBER */
-.big{font-size:44px;font-weight:700;}
-
-/* SMALL */
-.small{font-size:13px;opacity:0.6;}
-
-/* BUTTON */
-button{
-  width:100%;
-  padding:12px;
+/* CAL RING */
+.ringWrap{
+  display:flex;
+  justify-content:center;
   margin-top:10px;
-  border-radius:12px;
-  border:none;
-  background:#0a84ff;
-  color:white;
-  font-weight:600;
-  transition:0.15s;
 }
 
-button:active{transform:scale(0.98);}
+.ring{
+  width:140px;
+  height:140px;
+  border-radius:50%;
+  background:conic-gradient(#0a84ff var(--p,0%), rgba(255,255,255,0.08) 0%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
-.red{background:#ff453a;}
+.ringInner{
+  width:110px;
+  height:110px;
+  border-radius:50%;
+  background:#0b0f19;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
 
-/* ITEMS */
-.item{
+/* FOOD ITEM */
+.food{
   display:flex;
   justify-content:space-between;
   padding:10px 0;
   border-bottom:1px solid rgba(255,255,255,0.06);
 }
 
-/* MEALS */
-.mealItem{
+/* QUICK ADD */
+.quick{
   display:flex;
-  gap:10px;
-  align-items:center;
-  padding:10px 0;
+  gap:8px;
+  overflow-x:auto;
 }
 
-/* TAB */
+.pill{
+  padding:8px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.06);
+  font-size:12px;
+  white-space:nowrap;
+}
+
+/* BUTTON */
+button{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:12px;
+  background:#0a84ff;
+  color:white;
+  font-weight:600;
+}
+
+.red{background:#ff453a;}
+
+/* TAB BAR */
 .tabbar{
   position:fixed;
   bottom:0;
   left:0;
   right:0;
   display:flex;
-  background:rgba(18,18,22,0.9);
+  background:rgba(20,20,25,0.9);
   backdrop-filter:blur(25px);
 }
 
@@ -123,38 +142,40 @@ button:active{transform:scale(0.98);}
 
 .tab.active{color:#0a84ff;}
 
+/* INPUT */
+input{
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  border-radius:12px;
+  border:none;
+  background:rgba(255,255,255,0.06);
+  color:white;
+}
+
 /* SCANNER */
+.scanBox{
+  height:260px;
+  background:black;
+  border-radius:16px;
+  overflow:hidden;
+  position:relative;
+}
+
 .scanLine{
   position:absolute;
   height:2px;
   left:0;
   right:0;
-  background:linear-gradient(90deg,transparent,#0a84ff,transparent);
-  animation:scanMove 1.5s infinite;
+  background:#0a84ff;
+  animation:scan 1.4s infinite;
 }
 
-@keyframes scanMove{
+@keyframes scan{
   0%{transform:translateY(0);}
   50%{transform:translateY(260px);}
   100%{transform:translateY(0);}
 }
-
-/* MODAL */
-#modal{
-  position:fixed;
-  bottom:-400px;
-  left:0;
-  right:0;
-  background:rgba(28,28,30,0.95);
-  backdrop-filter:blur(20px);
-  padding:16px;
-  border-top-left-radius:20px;
-  border-top-right-radius:20px;
-  transition:0.3s;
-}
-
-/* CHART */
-canvas{margin-top:10px;}
 
 </style>
 
@@ -164,23 +185,39 @@ canvas{margin-top:10px;}
 
 <div class="app">
 
-<div class="header">FitTrack v14</div>
+<div class="header">FitTrack v15</div>
 
 <!-- HOME -->
 <div id="home" class="page active">
 
   <div class="card">
-    <div class="big" id="total">0</div>
-    <div class="small">Calories Today</div>
-    <div class="small">📅 <span id="date"></span></div>
-    <div class="small">🔥 Streak: <span id="streak">0</span> days</div>
+
+    <div class="ringWrap">
+      <div class="ring" id="ring">
+        <div class="ringInner">
+          <div id="cal">0</div>
+          <div style="font-size:11px;opacity:.6">calories</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:10px;font-size:12px;opacity:.6">
+      Goal: 2000
+    </div>
 
     <button class="red" onclick="resetDay()">Reset Day</button>
   </div>
 
   <div class="card">
-    <div style="font-weight:600">Weekly Progress</div>
-    <canvas id="chart"></canvas>
+
+    <div style="font-weight:600">Quick Add</div>
+
+    <div class="quick">
+      <div class="pill" onclick="quickAdd('Eggs',140)">Eggs</div>
+      <div class="pill" onclick="quickAdd('Chicken',400)">Chicken</div>
+      <div class="pill" onclick="quickAdd('Rice',200)">Rice</div>
+    </div>
+
   </div>
 
   <div class="card">
@@ -194,12 +231,13 @@ canvas{margin-top:10px;}
 
   <div class="card">
 
-    <div style="position:relative;height:260px;background:black;border-radius:16px;overflow:hidden">
-      <div id="scanner" style="width:100%;height:100%"></div>
+    <div class="scanBox">
+      <div id="scanner"></div>
       <div class="scanLine"></div>
     </div>
 
-    <button onclick="startScan()">Start Scan</button>
+    <button onclick="startScan()">Scan Barcode</button>
+    <button onclick="showManual()">Manual Add</button>
 
   </div>
 
@@ -209,96 +247,76 @@ canvas{margin-top:10px;}
 <div id="meals" class="page">
 
   <div class="card">
-    <div style="font-weight:600">Meal Plan</div>
-    <div class="small">📅 <span id="mealDate"></span></div>
-  </div>
-
-  <div class="card">
-    <div id="breakfast"></div>
-  </div>
-
-  <div class="card">
-    <div id="lunch"></div>
-  </div>
-
-  <div class="card">
-    <div id="dinner"></div>
-  </div>
-
-  <div class="card">
-    <div id="snack"></div>
+    <div style="font-weight:600">Meal History</div>
+    <div id="history"></div>
   </div>
 
 </div>
 
 </div>
 
-<!-- MODAL -->
-<div id="modal">
-  <div id="scanName"></div>
-  <input id="scanCalories" type="number">
-  <button onclick="confirmAdd()">Add</button>
-  <button class="red" onclick="closeModal()">Cancel</button>
+<!-- MANUAL -->
+<div id="modal" style="
+position:fixed;
+bottom:-400px;
+left:0;right:0;
+background:#1c1c1e;
+padding:16px;
+border-radius:20px 20px 0 0;
+transition:.3s;
+">
+
+<input id="name" placeholder="Food name">
+<input id="calories" type="number" placeholder="Calories">
+
+<button onclick="addManual()">Add</button>
+<button class="red" onclick="closeModal()">Cancel</button>
+
 </div>
 
 <!-- TAB -->
 <div class="tabbar">
-  <div class="tab" onclick="nav('home')">Home</div>
+  <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
-  <div class="tab" onclick="nav('meals')">Meals</div>
+  <div class="tab" onclick="nav('meals')">History</div>
 </div>
 
 <script>
 
-/* DATE */
-const today = new Date().toISOString().split("T")[0];
-document.getElementById("date").innerText = new Date().toLocaleDateString();
-document.getElementById("mealDate").innerText = new Date().toLocaleDateString();
+const today=new Date().toISOString().split("T")[0];
 
-/* DATA */
-let db = JSON.parse(localStorage.getItem("db")||"{}");
+let db=JSON.parse(localStorage.getItem("db")||"{}");
 if(!db[today]) db[today]=[];
 
-let meals = JSON.parse(localStorage.getItem("meals")||"null");
-if(!meals){
-  meals={
-    breakfast:[{name:"Eggs",calories:140,done:false}],
-    lunch:[{name:"Chicken",calories:400,done:false}],
-    dinner:[{name:"Salmon",calories:450,done:false}],
-    snack:[{name:"Protein Bar",calories:180,done:false}]
-  };
-}
+function save(){localStorage.setItem("db",JSON.stringify(db));}
 
-let cache = JSON.parse(localStorage.getItem("cache")||"{}");
-
-function save(){
-  localStorage.setItem("db",JSON.stringify(db));
-}
-
-function saveMeals(){
-  localStorage.setItem("meals",JSON.stringify(meals));
-}
-
-function saveCache(){
-  localStorage.setItem("cache",JSON.stringify(cache));
-}
-
-/* HOME */
+/* RENDER */
 function render(){
 
-  let total = db[today].reduce((a,b)=>a+Number(b.calories||0),0);
-  document.getElementById("total").innerText = total;
+  let total=db[today].reduce((a,b)=>a+Number(b.calories),0);
 
-  const el=document.getElementById("list");
-  el.innerHTML="";
+  document.getElementById("cal").innerText=total;
+
+  let percent=Math.min(total/2000*100,100);
+  document.getElementById("ring").style.setProperty("--p",percent+"%");
+
+  let list=document.getElementById("list");
+  list.innerHTML="";
 
   db[today].forEach(i=>{
-    el.innerHTML+=`
-      <div class="item">
+    list.innerHTML+=`
+      <div class="food">
         <span>${i.name}</span>
         <span>${i.calories}</span>
       </div>`;
   });
+}
+
+/* QUICK */
+function quickAdd(n,c){
+  db[today].push({name:n,calories:c});
+  save();
+  render();
 }
 
 /* RESET */
@@ -308,52 +326,23 @@ function resetDay(){
   render();
 }
 
-/* STREAK (SIMPLE) */
-function updateStreak(){
-  let days = Object.keys(db).filter(d=>db[d].length>0);
-  document.getElementById("streak").innerText = days.length;
-}
+/* MANUAL */
+function showManual(){document.getElementById("modal").style.bottom="0";}
+function closeModal(){document.getElementById("modal").style.bottom="-400px";}
 
-/* MEALS */
-function toggle(m,i){
-  meals[m][i].done=!meals[m][i].done;
-
-  if(meals[m][i].done){
-    db[today].push(meals[m][i]);
-  }
+function addManual(){
+  db[today].push({
+    name:document.getElementById("name").value,
+    calories:Number(document.getElementById("calories").value)
+  });
 
   save();
-  saveMeals();
   render();
-  renderMeals();
+  closeModal();
 }
 
-/* RENDER MEALS */
-function renderMeals(){
-
-  ["breakfast","lunch","dinner","snack"].forEach(m=>{
-
-    const el=document.getElementById(m);
-    el.innerHTML="";
-
-    meals[m].forEach((i,idx)=>{
-      el.innerHTML+=`
-        <div class="mealItem">
-          <input type="checkbox"
-                 ${i.done?'checked':''}
-                 onchange="toggle('${m}',${idx})">
-          <span style="flex:1">${i.name}</span>
-          <span>${i.calories}</span>
-        </div>`;
-    });
-  });
-}
-
-/* SCANNER */
-let buffer=null;
-
+/* SCAN */
 function startScan(){
-
   const scanner=document.getElementById("scanner");
 
   Quagga.init({
@@ -365,15 +354,9 @@ function startScan(){
   });
 
   Quagga.onDetected(async d=>{
-
     Quagga.stop();
 
     const code=d.codeResult.code;
-
-    if(cache[code]){
-      open(cache[code]);
-      return;
-    }
 
     const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
     const json=await res.json();
@@ -381,64 +364,16 @@ function startScan(){
 
     let kcal=0;
     const n=p.nutriments||{};
-
     if(n["energy-kcal_100g"]) kcal=n["energy-kcal_100g"];
     else if(n["energy_100g"]) kcal=n["energy_100g"]/4.184;
 
-    const food={
+    db[today].push({
       name:p.product_name||"Food",
       calories:Math.round(kcal||0)
-    };
+    });
 
-    cache[code]=food;
-    saveCache();
-
-    open(food);
-  });
-}
-
-/* MODAL */
-function open(data){
-  buffer=data;
-  document.getElementById("scanName").innerText=data.name;
-  document.getElementById("scanCalories").value=data.calories;
-  document.getElementById("modal").style.bottom="0";
-}
-
-function closeModal(){
-  document.getElementById("modal").style.bottom="-400px";
-}
-
-function confirmAdd(){
-
-  db[today].push({
-    name:buffer.name,
-    calories:Number(document.getElementById("scanCalories").value)
-  });
-
-  save();
-  render();
-  updateStreak();
-  closeModal();
-}
-
-/* CHART */
-function loadChart(){
-
-  let labels=[];
-  let data=[];
-
-  Object.keys(db).slice(-7).forEach(d=>{
-    labels.push(d);
-    data.push(db[d].reduce((a,b)=>a+Number(b.calories||0),0));
-  });
-
-  new Chart(document.getElementById("chart"),{
-    type:"line",
-    data:{
-      labels:labels,
-      datasets:[{data:data}]
-    }
+    save();
+    render();
   });
 }
 
@@ -446,13 +381,12 @@ function loadChart(){
 function nav(p){
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
   document.getElementById(p).classList.add("active");
+
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 }
 
 /* INIT */
 render();
-renderMeals();
-loadChart();
-updateStreak();
 
 </script>
 
