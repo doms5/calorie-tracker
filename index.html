@@ -14,74 +14,91 @@
 
 <style>
 
+/* ================= BASE ================= */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text";
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display";
   background: #f2f2f7;
+  color: #111;
 }
 
 /* HEADER */
 .header {
-  background: white;
   padding: 14px;
-  font-size: 20px;
-  font-weight: 700;
   text-align: center;
+  font-weight: 700;
+  font-size: 20px;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(15px);
   border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
 }
 
 /* PAGES */
-.page { display:none; padding-bottom: 80px; }
-.active { display:block; }
+.page { display: none; padding-bottom: 90px; }
+.active { display: block; }
 
-/* CARDS */
+/* CARD */
 .card {
   background: white;
   margin: 12px;
   padding: 16px;
-  border-radius: 18px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
 }
 
 /* TEXT */
-.big { font-size: 34px; font-weight: 800; }
-.small { font-size: 12px; color: #777; }
+.big {
+  font-size: 38px;
+  font-weight: 800;
+}
+
+.small {
+  font-size: 12px;
+  color: #777;
+}
+
+/* PROGRESS */
+.progress {
+  height: 10px;
+  background: #e5e5ea;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg,#34c759,#30d158);
+}
+
+/* INPUT */
+input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
 
 /* BUTTON */
 button {
   width: 100%;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 14px;
   border: none;
-  background: #007aff;
+  font-weight: 600;
   color: white;
-  font-weight: 600;
+  background: #007aff;
 }
 
-/* TAB BAR */
-.tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  background: white;
-  border-top: 1px solid #ddd;
-}
+.green { background:#34c759; }
+.red { background:#ff3b30; }
 
-.tab {
-  flex: 1;
-  text-align: center;
-  line-height: 60px;
-  font-weight: 600;
-  color: #888;
-}
-
-.tab.active {
-  color: #007aff;
-}
-
-/* ITEM */
+/* LIST */
 .item {
   display:flex;
   justify-content:space-between;
@@ -89,25 +106,50 @@ button {
   border-bottom:1px solid #eee;
 }
 
-/* CALENDAR GRID */
-.calendar {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+/* ================= TAB BAR (APP STORE STYLE) ================= */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px);
+  display: flex;
+  border-top: 1px solid #ddd;
 }
 
-.day {
-  background: #f0f0f5;
-  padding: 10px;
-  border-radius: 10px;
+/* TAB ITEM */
+.tab {
+  flex: 1;
   text-align: center;
-  font-size: 12px;
-  cursor: pointer;
+  padding-top: 10px;
+  font-size: 11px;
+  color: #8e8e93;
+  font-weight: 600;
+  position: relative;
 }
 
-.day.active {
+/* ICON STYLE */
+.tab span {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+/* ACTIVE TAB */
+.tab.active {
+  color: #007aff;
+}
+
+/* ACTIVE BAR INDICATOR */
+.indicator {
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  width: 25%;
   background: #007aff;
-  color: white;
+  transition: 0.3s;
 }
 
 </style>
@@ -116,33 +158,22 @@ button {
 
 <body>
 
-<div class="header">🔥 FitTrack Pro</div>
+<div class="header">FitTrack Pro</div>
 
-<!-- ================= TODAY ================= -->
+<!-- ================= HOME ================= -->
 <div id="home" class="page active">
 
   <div class="card">
     <div class="big" id="total">0 calories</div>
-    <div class="small">Today: <span id="dateLabel"></span></div>
+    <div class="small">Daily Goal: 2000</div>
+
+    <div class="progress">
+      <div class="fill" id="bar"></div>
+    </div>
   </div>
 
   <div class="card">
     <div id="list"></div>
-  </div>
-
-</div>
-
-<!-- ================= HISTORY ================= -->
-<div id="history" class="page">
-
-  <div class="card">
-    <div class="small">Select a Day</div>
-    <div class="calendar" id="calendar"></div>
-  </div>
-
-  <div class="card">
-    <div class="big" id="historyTotal">0 calories</div>
-    <div id="historyList"></div>
   </div>
 
 </div>
@@ -155,37 +186,80 @@ button {
     <div id="scanner"></div>
   </div>
 
+  <div class="card">
+    <input id="food" placeholder="Food">
+    <input id="calories" type="number" placeholder="Calories">
+    <button onclick="addFood()">Add Manual</button>
+  </div>
+
 </div>
 
-<!-- TAB BAR -->
+<!-- ================= MEALS ================= -->
+<div id="meals" class="page">
+
+  <div class="card">
+    <h3>Meal Plan</h3>
+
+    <h4>Breakfast</h4>
+    <label><input type="checkbox" onchange="meal('Eggs',140)"> Eggs</label><br>
+    <label><input type="checkbox" onchange="meal('Oatmeal',150)"> Oatmeal</label>
+
+    <h4>Lunch</h4>
+    <label><input type="checkbox" onchange="meal('Chicken',200)"> Chicken</label><br>
+    <label><input type="checkbox" onchange="meal('Rice',250)"> Rice</label>
+
+    <h4>Dinner</h4>
+    <label><input type="checkbox" onchange="meal('Salmon',300)"> Salmon</label><br>
+    <label><input type="checkbox" onchange="meal('Veggies',80)"> Veggies</label>
+
+  </div>
+
+</div>
+
+<!-- ================= HISTORY ================= -->
+<div id="history" class="page">
+
+  <div class="card">
+    <div class="small">History coming next upgrade (UI ready)</div>
+  </div>
+
+</div>
+
+<!-- ================= TAB BAR ================= -->
 <div class="tabbar">
-  <div class="tab active" onclick="nav('home')">Today</div>
-  <div class="tab" onclick="nav('history')">History</div>
-  <div class="tab" onclick="nav('scan')">Scan</div>
+
+  <div class="tab active" onclick="nav('home',0)">
+    <span>🏠</span>Home
+  </div>
+
+  <div class="tab" onclick="nav('scan',1)">
+    <span>📷</span>Scan
+  </div>
+
+  <div class="tab" onclick="nav('meals',2)">
+    <span>🍽️</span>Meals
+  </div>
+
+  <div class="tab" onclick="nav('history',3)">
+    <span>📊</span>History
+  </div>
+
+  <div class="indicator" id="indicator"></div>
+
 </div>
 
 <script>
 
-const today = new Date().toISOString().split("T")[0];
+let items = JSON.parse(localStorage.getItem("foods") || "[]");
+const GOAL = 2000;
 
-let db = JSON.parse(localStorage.getItem("db") || "{}");
-if (!db[today]) db[today] = [];
-
-let selectedDate = today;
-
-/* SAVE */
-function save() {
-  localStorage.setItem("db", JSON.stringify(db));
-}
-
-/* ================= TODAY RENDER ================= */
-function renderToday() {
-  let list = document.getElementById("list");
+/* ================= RENDER ================= */
+function render() {
+  let total = 0;
+  const list = document.getElementById("list");
   list.innerHTML = "";
 
-  let total = 0;
-
-  db[today].forEach(i => {
+  items.forEach(i => {
     total += i.calories;
 
     list.innerHTML += `
@@ -197,64 +271,24 @@ function renderToday() {
   });
 
   document.getElementById("total").innerText = total + " calories";
-  document.getElementById("dateLabel").innerText = today;
+  document.getElementById("bar").style.width = Math.min((total/GOAL)*100,100) + "%";
+
+  localStorage.setItem("foods", JSON.stringify(items));
 }
 
-/* ================= HISTORY CALENDAR ================= */
-function renderCalendar() {
-  const cal = document.getElementById("calendar");
-  cal.innerHTML = "";
-
-  let days = Object.keys(db).sort().slice(-30); // last 30 days
-
-  days.forEach(d => {
-    const div = document.createElement("div");
-    div.className = "day" + (d === selectedDate ? " active" : "");
-    div.innerText = d.split("-")[2];
-
-    div.onclick = () => {
-      selectedDate = d;
-      renderHistory();
-      renderCalendar();
-    };
-
-    cal.appendChild(div);
-  });
-}
-
-/* ================= HISTORY VIEW ================= */
-function renderHistory() {
-  let list = document.getElementById("historyList");
-  list.innerHTML = "";
-
-  let total = 0;
-
-  if (!db[selectedDate]) db[selectedDate] = [];
-
-  db[selectedDate].forEach(i => {
-    total += i.calories;
-
-    list.innerHTML += `
-      <div class="item">
-        <span>${i.name}</span>
-        <span>${i.calories}</span>
-      </div>
-    `;
-  });
-
-  document.getElementById("historyTotal").innerText =
-    selectedDate + " — " + total + " calories";
-}
-
-/* ================= ADD FOOD ================= */
+/* ================= ADD ================= */
 function addFood(name, cal) {
-  const food = name || "Food";
-  const calories = cal || 0;
+  const food = name || document.getElementById("food").value;
+  const calories = cal || document.getElementById("calories").value;
 
-  db[today].push({ name: food, calories: Number(calories) });
+  if (!food || !calories) return;
 
-  save();
-  renderToday();
+  items.push({ name: food, calories: Number(calories) });
+
+  document.getElementById("food").value = "";
+  document.getElementById("calories").value = "";
+
+  render();
 }
 
 /* ================= SCAN ================= */
@@ -286,24 +320,24 @@ function startScan() {
   });
 }
 
+/* ================= MEALS ================= */
+function meal(name, cal) {
+  addFood(name, cal);
+}
+
 /* ================= NAV ================= */
-function nav(page) {
+function nav(page, index) {
+
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(page).classList.add("active");
 
   document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  event.target.classList.add("active");
+  event.currentTarget.classList.add("active");
 
-  if (page === "history") {
-    renderCalendar();
-    renderHistory();
-  }
-
-  if (page === "home") renderToday();
+  document.getElementById("indicator").style.left = (index * 25) + "%";
 }
 
-/* INIT */
-renderToday();
+render();
 
 </script>
 
