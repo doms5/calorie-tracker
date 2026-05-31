@@ -1,47 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>FitTrack Pro</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
+<style>
+
+body {
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display";
+  background: linear-gradient(180deg,#0f172a,#1e293b,#020617);
+  color:white;
+}
+
+.app {
+  max-width:430px;
+  margin:0 auto;
+  padding-bottom:90px;
+}
+
+.header {
+  text-align:center;
+  padding:14px;
+  font-weight:800;
+}
+
+.page { display:none; }
+.active { display:block; }
+
+.card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(18px);
+  margin:12px;
+  padding:16px;
+  border-radius:18px;
+}
+
+.big {
+  font-size:42px;
+  font-weight:900;
+}
+
+input {
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  border-radius:12px;
+  border:none;
+  background:rgba(255,255,255,0.08);
+  color:white;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:12px;
+  border:none;
+  background:linear-gradient(135deg,#3b82f6,#06b6d4);
+  color:white;
+  font-weight:700;
+}
+
+.red {
+  background:linear-gradient(135deg,#ef4444,#dc2626);
+}
+
+.item {
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.delete {
+  color:#fb7185;
+  font-size:12px;
+  cursor:pointer;
+}
+
+.tabbar {
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:flex;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter: blur(20px);
+}
+
+.tab {
+  flex:1;
+  text-align:center;
+  padding:10px;
+  font-size:11px;
+  color:#94a3b8;
+}
+
+.tab.active { color:#38bdf8; }
+
+.mealItem{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  cursor:pointer;
+}
+
+.mealItem:active{
+  transform:scale(0.98);
+  opacity:0.7;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">🔥 FitTrack Pro</div>
+
+<!-- HOME -->
+<div id="home" class="page active">
+
+  <div class="card">
+    <div class="big" id="total">0</div>
+    <div>Calories Today</div>
+
+    <div style="font-size:12px;opacity:0.7">
+      📅 <span id="date"></span>
+    </div>
+
+    <input id="goal" type="number" placeholder="Daily goal (default 2000)">
+  </div>
+
+  <div class="card">
+    <div id="list"></div>
+  </div>
+
+</div>
+
+<!-- SCAN -->
+<div id="scan" class="page">
+
+  <div class="card">
+    <button onclick="startScan()">Scan Barcode</button>
+    <div id="scanner"></div>
+  </div>
+
+  <div class="card">
+    <input id="food" placeholder="Food name">
+    <input id="cal" type="number" placeholder="Calories">
+    <input id="pro" type="number" placeholder="Protein">
+    <input id="car" type="number" placeholder="Carbs">
+    <input id="fat" type="number" placeholder="Fat">
+    <button onclick="addManual()">Add Food</button>
+  </div>
+
+</div>
+
+<!-- MEALS -->
 <div id="meals" class="page">
 
   <div class="card">
-    <div class="big">🍽 Meals</div>
+    <div class="big">🍽 Meal Plan</div>
     <div style="font-size:12px;opacity:0.7">
-      Tap items to log them instantly
+      Tap items to log instantly
     </div>
   </div>
 
-  <!-- 🧠 SMART SUGGESTIONS (MOVED HERE) -->
+  <!-- SMART -->
   <div class="card">
-    <div style="font-weight:700">🧠 Suggested for You</div>
-    <div style="font-size:12px;opacity:0.7">Based on remaining calories</div>
-
-    <div id="mealSuggestions"></div>
+    <div style="font-weight:700">🧠 Smart Suggestions</div>
+    <div id="suggestions"></div>
   </div>
 
-  <!-- BREAKFAST -->
   <div class="card">
     <div style="font-weight:700">🥣 Breakfast</div>
     <div id="bList"></div>
   </div>
 
-  <!-- LUNCH -->
   <div class="card">
     <div style="font-weight:700">🍗 Lunch</div>
     <div id="lList"></div>
   </div>
 
-  <!-- DINNER -->
   <div class="card">
     <div style="font-weight:700">🥩 Dinner</div>
     <div id="dList"></div>
   </div>
 
-  <!-- SNACK -->
   <div class="card">
     <div style="font-weight:700">🍎 Snack</div>
     <div id="sList"></div>
   </div>
 
-  <!-- 🔁 RESET DAY (RESTORED) -->
   <div class="card">
     <button class="red" onclick="resetDay()">Reset Day</button>
   </div>
 
 </div>
+
+</div>
+
+<!-- TAB -->
+<div class="tabbar">
+  <div class="tab active" onclick="nav('home')">Home</div>
+  <div class="tab" onclick="nav('scan')">Scan</div>
+  <div class="tab" onclick="nav('meals')">Meals</div>
+</div>
+
+<script>
+
+const today = new Date().toISOString().split("T")[0];
+
+let db = JSON.parse(localStorage.getItem("db") || "{}");
+if (!db[today]) db[today] = [];
+
+document.getElementById("date").innerText = today;
+
+/* SAVE */
+function save(){
+  localStorage.setItem("db", JSON.stringify(db));
+}
+
+/* GOAL */
+function getGoal(){
+  return Number(document.getElementById("goal").value || 2000);
+}
+
+/* TOTAL */
+function getTotal(){
+  let t = 0;
+  db[today].forEach(i => t += Number(i.calories || 0));
+  return t;
+}
+
+/* ADD MANUAL */
+function addManual(){
+
+  db[today].push({
+    name:food.value,
+    calories:Number(cal.value||0),
+    protein:Number(pro.value||0),
+    carbs:Number(car.value||0),
+    fat:Number(fat.value||0)
+  });
+
+  save();
+  render();
+  renderMealTab();
+}
+
+/* DELETE */
+function del(i){
+  db[today].splice(i,1);
+  save();
+  render();
+  renderMealTab();
+}
+
+/* RESET DAY (RESTORED) */
+function resetDay(){
+  db[today] = [];
+  save();
+  render();
+  renderMealTab();
+}
+
+/* RENDER HOME */
+function render(){
+
+  let total = 0;
+  const listEl = document.getElementById("list");
+
+  listEl.innerHTML = "";
+
+  db[today].forEach((i,idx)=>{
+    total += Number(i.calories || 0);
+
+    listEl.innerHTML += `
+      <div class="item">
+        <span>${i.name}</span>
+        <span>${i.calories}</span>
+        <span class="delete" onclick="del(${idx})">x</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("total").innerText = total;
+}
+
+/* =========================
+   MEAL SYSTEM
+========================= */
+
+const meals = {
+  breakfast:[
+    {name:"Eggs",calories:140},
+    {name:"Oatmeal",calories:300}
+  ],
+  lunch:[
+    {name:"Chicken Rice",calories:450},
+    {name:"Turkey Sandwich",calories:350}
+  ],
+  dinner:[
+    {name:"Salmon",calories:400}
+  ],
+  snack:[
+    {name:"Protein Bar",calories:180}
+  ]
+};
+
+/* LOG FOOD */
+function logMeal(name,calories){
+
+  db[today].push({
+    name,
+    calories,
+    protein:0,
+    carbs:0,
+    fat:0
+  });
+
+  save();
+  render();
+  renderMealTab();
+}
+
+/* SMART SUGGESTIONS */
+function renderSuggestions(){
+
+  const remaining = getGoal() - getTotal();
+  const box = document.getElementById("suggestions");
+
+  if(!box) return;
+
+  box.innerHTML = "";
+
+  if(remaining <= 0){
+    box.innerHTML = "🎉 Goal reached";
+    return;
+  }
+
+  const smart = [
+    {name:"Eggs + Toast",calories:260},
+    {name:"Chicken Bowl",calories:450},
+    {name:"Protein Shake",calories:180},
+    {name:"Salmon Plate",calories:400}
+  ].filter(m => m.calories <= remaining + 150);
+
+  smart.slice(0,4).forEach(m=>{
+    box.innerHTML += `
+      <div class="mealItem" onclick="logMeal('${m.name}',${m.calories})">
+        <span>${m.name}</span>
+        <span>${m.calories}</span>
+      </div>
+    `;
+  });
+}
+
+/* RENDER MEALS */
+function renderMealTab(){
+
+  function fill(id, arr){
+    const el = document.getElementById(id);
+    if(!el) return;
+
+    el.innerHTML = "";
+
+    arr.forEach(i=>{
+      el.innerHTML += `
+        <div class="mealItem" onclick="logMeal('${i.name}',${i.calories})">
+          <span>${i.name}</span>
+          <span>${i.calories}</span>
+        </div>
+      `;
+    });
+  }
+
+  fill("bList",meals.breakfast);
+  fill("lList",meals.lunch);
+  fill("dList",meals.dinner);
+  fill("sList",meals.snack);
+
+  renderSuggestions();
+}
+
+/* SCANNER */
+let scanning=false;
+
+function startScan(){
+
+  if(scanning) return;
+  scanning=true;
+
+  const scanner=document.getElementById("scanner");
+
+  Quagga.init({
+    inputStream:{type:"LiveStream",target:scanner},
+    decoder:{readers:["ean_reader","upc_reader"]}
+  },err=>{
+    if(err){scanning=false;return alert(err);}
+    Quagga.start();
+  });
+
+  Quagga.onDetected(async data=>{
+
+    if(!scanning) return;
+    scanning=false;
+
+    Quagga.stop();
+
+    const code=data.codeResult.code;
+
+    const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const json=await res.json();
+    const p=json.product||{};
+
+    db[today].push({
+      name:p.product_name||"Scanned Food",
+      calories:Number(p?.nutriments?.["energy-kcal_100g"]||0),
+      protein:0,
+      carbs:0,
+      fat:0
+    });
+
+    save();
+    render();
+    renderMealTab();
+  });
+}
+
+/* NAV */
+function nav(p){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(p).classList.add("active");
+}
+
+/* INIT */
+render();
+renderMealTab();
+
+</script>
+
+</body>
+</html>
