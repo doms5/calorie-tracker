@@ -1,9 +1,9 @@
 {
-  "name": "FitTrack",
+  "name": "FitTrack Pro",
   "short_name": "FitTrack",
-  "start_url": "./",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#f2f2f7",
+  "background_color": "#ffffff",
   "theme_color": "#007aff",
   "icons": [
     {
