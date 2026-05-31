@@ -5,7 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FitTrack Elite v9</title>
+<title>FitTrack Elite v13</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a84ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
@@ -18,14 +25,12 @@ body{
   color:#f5f5f7;
 }
 
-/* APP CONTAINER */
 .app{
   max-width:430px;
   margin:0 auto;
   padding-bottom:90px;
 }
 
-/* HEADER (Apple clean blur style) */
 .header{
   position:sticky;
   top:0;
@@ -38,11 +43,9 @@ body{
   border-bottom:1px solid rgba(255,255,255,0.06);
 }
 
-/* PAGES */
 .page{display:none;}
 .active{display:block;}
 
-/* CARDS (Apple grouped style) */
 .card{
   background:rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.06);
@@ -51,20 +54,17 @@ body{
   border-radius:16px;
 }
 
-/* BIG NUMBER */
 .big{
   font-size:44px;
   font-weight:700;
   letter-spacing:-1px;
 }
 
-/* LABELS */
 .small{
   font-size:13px;
   opacity:0.6;
 }
 
-/* INPUTS */
 input{
   width:100%;
   padding:12px;
@@ -73,10 +73,8 @@ input{
   border:none;
   background:rgba(255,255,255,0.06);
   color:white;
-  outline:none;
 }
 
-/* BUTTONS */
 button{
   width:100%;
   padding:12px;
@@ -86,19 +84,10 @@ button{
   background:#0a84ff;
   color:white;
   font-weight:600;
-  font-size:15px;
 }
 
-button:active{
-  transform:scale(0.98);
-  opacity:0.8;
-}
+.red{background:#ff453a;}
 
-.red{
-  background:#ff453a;
-}
-
-/* LIST ITEMS */
 .item{
   display:flex;
   justify-content:space-between;
@@ -106,28 +95,42 @@ button:active{
   border-bottom:1px solid rgba(255,255,255,0.06);
 }
 
-/* MEAL ITEMS */
 .mealItem{
   display:flex;
   align-items:center;
   gap:10px;
   padding:12px 0;
   border-bottom:1px solid rgba(255,255,255,0.06);
-  transition:0.2s ease;
 }
 
-.mealItem:active{
-  transform:scale(0.98);
-}
-
-/* CHECKBOX */
 input[type="checkbox"]{
   width:18px;
   height:18px;
   accent-color:#0a84ff;
 }
 
-/* TAB BAR (iOS style) */
+/* SCANNER UI */
+.scanLine{
+  position:absolute;
+  left:0;
+  right:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,#0a84ff,transparent);
+  animation:scanMove 1.6s linear infinite;
+}
+
+@keyframes scanMove{
+  0%{transform:translateY(0);}
+  50%{transform:translateY(260px);}
+  100%{transform:translateY(0);}
+}
+
+.scanningFrame{
+  box-shadow:0 0 0 2px rgba(10,132,255,0.4),
+             0 0 30px rgba(10,132,255,0.3);
+}
+
+/* TAB */
 .tabbar{
   position:fixed;
   bottom:0;
@@ -147,18 +150,19 @@ input[type="checkbox"]{
   color:#8e8e93;
 }
 
-.tab.active{
-  color:#0a84ff;
-}
+.tab.active{color:#0a84ff;}
 
-/* ANIMATION */
-.fade{
-  animation:fadeIn 0.25s ease;
-}
-
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(6px);}
-  to{opacity:1;transform:translateY(0);}
+#confirmModal{
+  position:fixed;
+  bottom:-400px;
+  left:0;
+  right:0;
+  background:rgba(28,28,30,0.95);
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  padding:16px;
+  transition:0.35s ease;
+  backdrop-filter:blur(20px);
 }
 
 </style>
@@ -169,18 +173,15 @@ input[type="checkbox"]{
 
 <div class="app">
 
-<div class="header">FitTrack</div>
+<div class="header">FitTrack Elite v13</div>
 
 <!-- HOME -->
-<div id="home" class="page active fade">
+<div id="home" class="page active">
 
   <div class="card">
     <div class="big" id="total">0</div>
     <div class="small">Calories Today</div>
-
-    <div class="small" style="margin-top:6px">
-      📅 <span id="date"></span>
-    </div>
+    <div class="small">📅 <span id="date"></span></div>
 
     <button class="red" onclick="resetDay()">Reset Day</button>
   </div>
@@ -192,44 +193,48 @@ input[type="checkbox"]{
 </div>
 
 <!-- SCAN -->
-<div id="scan" class="page fade">
+<div id="scan" class="page">
 
   <div class="card">
-    <button onclick="startScan()">Scan Barcode</button>
-    <div id="scanner"></div>
+
+    <div style="font-weight:700">📷 Scan Food</div>
+
+    <div style="position:relative;height:260px;margin-top:10px;background:black;border-radius:16px;overflow:hidden">
+      <div id="scanner" style="width:100%;height:100%"></div>
+      <div class="scanLine"></div>
+    </div>
+
+    <button onclick="startScan()">Start Scan</button>
+
   </div>
 
 </div>
 
 <!-- MEALS -->
-<div id="meals" class="page fade">
+<div id="meals" class="page">
 
   <div class="card">
-    <div style="font-size:18px;font-weight:600">Meal Plan</div>
-    <div class="small">Tap checkbox to complete</div>
-
-    <div class="small" style="margin-top:6px">
-      📅 <span id="mealDate"></span>
-    </div>
+    <div style="font-weight:700">Meal Plan</div>
+    <div class="small">📅 <span id="mealDate"></span></div>
   </div>
 
   <div class="card">
-    <div style="font-weight:600">Breakfast</div>
+    <div>Breakfast</div>
     <div id="breakfast"></div>
   </div>
 
   <div class="card">
-    <div style="font-weight:600">Lunch</div>
+    <div>Lunch</div>
     <div id="lunch"></div>
   </div>
 
   <div class="card">
-    <div style="font-weight:600">Dinner</div>
+    <div>Dinner</div>
     <div id="dinner"></div>
   </div>
 
   <div class="card">
-    <div style="font-weight:600">Snack</div>
+    <div>Snack</div>
     <div id="snack"></div>
   </div>
 
@@ -237,7 +242,21 @@ input[type="checkbox"]{
 
 </div>
 
-<!-- TAB BAR -->
+<!-- MODAL -->
+<div id="confirmModal">
+
+  <div style="font-weight:700">Confirm Food</div>
+
+  <div id="scanName" style="margin-top:10px"></div>
+
+  <input id="scanCalories" type="number">
+
+  <button onclick="confirmAdd()">Add</button>
+  <button class="red" onclick="closeModal()">Cancel</button>
+
+</div>
+
+<!-- TAB -->
 <div class="tabbar">
   <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
@@ -246,60 +265,53 @@ input[type="checkbox"]{
 
 <script>
 
+/* DATE */
 const today = new Date().toISOString().split("T")[0];
-
-document.getElementById("date").innerText =
-  new Date().toLocaleDateString();
-
-document.getElementById("mealDate").innerText =
-  new Date().toLocaleDateString();
+document.getElementById("date").innerText = new Date().toLocaleDateString();
+document.getElementById("mealDate").innerText = new Date().toLocaleDateString();
 
 /* DATA */
 let db = JSON.parse(localStorage.getItem("db") || "{}");
 if(!db[today]) db[today]=[];
 
 let meals = JSON.parse(localStorage.getItem("meals") || "null");
-
 if(!meals){
   meals={
-    breakfast:[
-      {name:"Eggs",calories:140,done:false},
-      {name:"Oatmeal",calories:300,done:false}
-    ],
-    lunch:[{name:"Chicken Rice",calories:450,done:false}],
-    dinner:[{name:"Salmon",calories:400,done:false}],
+    breakfast:[{name:"Eggs",calories:140,done:false}],
+    lunch:[{name:"Chicken",calories:400,done:false}],
+    dinner:[{name:"Salmon",calories:450,done:false}],
     snack:[{name:"Protein Bar",calories:180,done:false}]
   };
 }
 
-function save(){
-  localStorage.setItem("db",JSON.stringify(db));
-}
+let foodCache = JSON.parse(localStorage.getItem("foodCache") || "{}");
+let scanBuffer = null;
+let lastScannedCode = null;
 
-function saveMeals(){
-  localStorage.setItem("meals",JSON.stringify(meals));
-}
+/* SAVE */
+function save(){localStorage.setItem("db",JSON.stringify(db));}
+function saveMeals(){localStorage.setItem("meals",JSON.stringify(meals));}
+function saveCache(){localStorage.setItem("foodCache",JSON.stringify(foodCache));}
 
 /* HOME */
 function render(){
 
-  let total=0;
-  const el=document.getElementById("list");
+  let total = db[today]
+    .map(i=>Number(i.calories||0))
+    .reduce((a,b)=>a+b,0);
 
+  document.getElementById("total").innerText = total;
+
+  const el=document.getElementById("list");
   el.innerHTML="";
 
   db[today].forEach(i=>{
-    total+=Number(i.calories||0);
-
     el.innerHTML+=`
       <div class="item">
         <span>${i.name}</span>
         <span>${i.calories}</span>
-      </div>
-    `;
+      </div>`;
   });
-
-  document.getElementById("total").innerText=total;
 }
 
 /* RESET */
@@ -316,61 +328,21 @@ function toggle(m,i){
   renderMeals();
 }
 
-function edit(m,i){
-  let it=meals[m][i];
-
-  let n=prompt("Name",it.name);
-  let c=prompt("Calories",it.calories);
-
-  if(n!==null) it.name=n;
-  if(c!==null) it.calories=Number(c);
-
-  saveMeals();
-  renderMeals();
-}
-
-function add(m){
-  let n=prompt("Food");
-  let c=prompt("Calories");
-
-  if(!n||!c) return;
-
-  meals[m].push({name:n,calories:Number(c),done:false});
-  saveMeals();
-  renderMeals();
-}
-
-/* APPLE STYLE RENDER */
 function renderMeals(){
 
   function fill(id,m){
-
     const el=document.getElementById(id);
     el.innerHTML="";
 
     meals[m].forEach((i,idx)=>{
-
       el.innerHTML+=`
-        <div class="mealItem fade"
-             style="opacity:${i.done?0.4:1};
-                    text-decoration:${i.done?'line-through':'none'}">
-
-          <input type="checkbox"
-                 ${i.done?'checked':''}
+        <div class="mealItem">
+          <input type="checkbox" ${i.done?'checked':''}
                  onchange="toggle('${m}',${idx})">
-
           <span style="flex:1">${i.name}</span>
-
           <span>${i.calories}</span>
-
-          <span style="color:#0a84ff;font-size:12px"
-                onclick="edit('${m}',${idx})">edit</span>
-
-        </div>
-      `;
+        </div>`;
     });
-
-    el.innerHTML+=`<button onclick="add('${m}')">+ Add</button>`;
   }
 
   fill("breakfast","breakfast");
@@ -379,13 +351,8 @@ function renderMeals(){
   fill("snack","snack");
 }
 
-/* SCAN */
-let scanning=false;
-
+/* SCANNER */
 function startScan(){
-
-  if(scanning) return;
-  scanning=true;
 
   const scanner=document.getElementById("scanner");
 
@@ -393,41 +360,70 @@ function startScan(){
     inputStream:{type:"LiveStream",target:scanner},
     decoder:{readers:["ean_reader","upc_reader"]}
   },err=>{
-    if(err){scanning=false;return;}
+    if(err) return alert(err);
     Quagga.start();
   });
 
   Quagga.onDetected(async d=>{
 
-    if(!scanning) return;
-    scanning=false;
-
     Quagga.stop();
 
     const code=d.codeResult.code;
+    lastScannedCode = code;
+
+    if(foodCache[code]){
+      openModal(foodCache[code]);
+      return;
+    }
 
     const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
     const json=await res.json();
-
     const p=json.product||{};
 
-    db[today].push({
-      name:p.product_name||"Food",
-      calories:Number(p?.nutriments?.["energy-kcal_100g"]||0)
-    });
+    let kcal = 0;
+    const n=p.nutriments||{};
 
-    save();
-    render();
+    if(n["energy-kcal_100g"]) kcal=n["energy-kcal_100g"];
+    else if(n["energy_100g"]) kcal=n["energy_100g"]/4.184;
+
+    kcal=Math.round(kcal||0);
+
+    const food={name:p.product_name||"Food",calories:kcal};
+
+    foodCache[code]=food;
+    saveCache();
+
+    openModal(food);
   });
+}
+
+/* MODAL */
+function openModal(data){
+  document.getElementById("scanName").innerText=data.name;
+  document.getElementById("scanCalories").value=data.calories;
+  document.getElementById("confirmModal").style.bottom="0";
+}
+
+function closeModal(){
+  document.getElementById("confirmModal").style.bottom="-400px";
+}
+
+function confirmAdd(){
+
+  db[today].push({
+    name:document.getElementById("scanName").innerText,
+    calories:Number(document.getElementById("scanCalories").value||0)
+  });
+
+  save();
+  render();
+  closeModal();
 }
 
 /* NAV */
 function nav(p){
-
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
   document.getElementById(p).classList.add("active");
-
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 }
 
 /* INIT */
