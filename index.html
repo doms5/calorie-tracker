@@ -1,54 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calorie Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness Tracker</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
 </head>
 
-<body style="font-family: Arial; padding: 20px;">
+<body style="font-family: Arial; padding: 20px; background:#f5f5f5;">
 
-  <h1>🔥 Calorie Tracker</h1>
+<h1>🔥 Fitness Tracker</h1>
 
-  <input id="food" placeholder="Food" style="display:block;margin-bottom:10px;">
-  <input id="calories" placeholder="Calories" type="number" style="display:block;margin-bottom:10px;">
+<input id="food" placeholder="Food name" style="display:block;margin-bottom:10px;padding:8px;">
+<input id="calories" placeholder="Calories" type="number" style="display:block;margin-bottom:10px;padding:8px;">
 
-  <button onclick="addFood()">Add Food</button>
-  <button onclick="resetAll()">Reset</button>
+<button onclick="addFood()">Add Food</button>
+<button onclick="startScanner()">Scan Barcode</button>
+<button onclick="resetAll()">Reset</button>
 
-  <h2 style="margin-top:20px;">Today</h2>
+<h2 style="margin-top:20px;">Today</h2>
 
-  <div id="list"></div>
+<div id="list"></div>
 
-  <h2 id="total">Total: 0</h2>
+<h2 id="total">Total: 0 kcal</h2>
+
+<div id="scanner" style="width:100%; height:300px; margin-top:10px;"></div>
 
 <script>
 let items = JSON.parse(localStorage.getItem("foods") || "[]")
 
 function render() {
+  let total = 0
   const list = document.getElementById("list")
   list.innerHTML = ""
 
-  let total = 0
-
-  items.forEach((item, i) => {
+  items.forEach(item => {
     total += item.calories
     list.innerHTML += `<div>${item.name} — ${item.calories} kcal</div>`
   })
 
-  document.getElementById("total").innerText = "Total: " + total
+  document.getElementById("total").innerText = "Total: " + total + " kcal"
   localStorage.setItem("foods", JSON.stringify(items))
 }
 
-function addFood() {
-  const food = document.getElementById("food").value
-  const calories = document.getElementById("calories").value
+function addFood(name, cal) {
+  const food = name || document.getElementById("food").value
+  const calories = cal || document.getElementById("calories").value
 
   if (!food || !calories) return
 
-  items.push({
-    name: food,
-    calories: Number(calories)
-  })
+  items.push({ name: food, calories: Number(calories) })
 
   document.getElementById("food").value = ""
   document.getElementById("calories").value = ""
@@ -60,6 +62,49 @@ function resetAll() {
   items = []
   localStorage.removeItem("foods")
   render()
+}
+
+function startScanner() {
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#scanner'),
+      constraints: {
+        facingMode: "environment"
+      }
+    },
+    decoder: {
+      readers: ["ean_reader", "upc_reader"]
+    }
+  }, function(err) {
+    if (err) {
+      alert(err)
+      return
+    }
+    Quagga.start()
+  })
+
+  Quagga.onDetected(async function(data) {
+    const code = data.codeResult.code
+
+    Quagga.stop()
+
+    document.getElementById("scanner").innerHTML = ""
+
+    // FETCH FOOD DATA
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
+    const json = await res.json()
+
+    const product = json.product
+
+    const name = product?.product_name || "Unknown food"
+    const cal = product?.nutriments?.energy_kcal_100g || 0
+
+    addFood(name, cal)
+
+    alert("Added: " + name)
+  })
 }
 
 render()
