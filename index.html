@@ -204,40 +204,67 @@ function resetDay() {
 
 /* BARCODE SCANNER */
 function scan() {
+  const scanner = document.getElementById("scanner");
+  scanner.innerHTML = "";
+
+  let lastCode = null;
+  let lastTime = 0;
+
   Quagga.init({
     inputStream: {
       type: "LiveStream",
-      target: document.querySelector("#scanner"),
+      target: scanner,
       constraints: {
         facingMode: "environment"
       }
     },
+    locator: {
+      patchSize: "medium",
+      halfSample: true
+    },
     decoder: {
       readers: ["ean_reader", "upc_reader"]
-    }
+    },
+    locate: true
   }, function(err) {
     if (err) {
-      alert(err);
+      alert("Camera error");
       return;
     }
     Quagga.start();
   });
 
-  Quagga.onDetected(async function(data) {
-    const code = data.codeResult.code;
-    Quagga.stop();
+  Quagga.onDetected(async function(result) {
+    const code = result.codeResult.code;
+    const now = Date.now();
 
-    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
-    const json = await res.json();
+    if (code === lastCode && now - lastTime < 3000) return;
 
-    const p = json.product;
+    lastCode = code;
+    lastTime = now;
 
-    addFood(
-      p?.product_name || "Unknown Food",
-      p?.nutriments?.energy_kcal_100g || 0
-    );
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+      const json = await res.json();
+      const p = json.product || {};
 
-    alert("Added: " + (p?.product_name || "Food"));
+      const name =
+        p.product_name ||
+        p.generic_name ||
+        "Unknown Food";
+
+      const calories =
+        p?.nutriments?.["energy-kcal_100g"] ||
+        p?.nutriments?.energy_kcal_100g ||
+        0;
+
+      addFood(name, calories);
+
+      navigator.vibrate?.(100);
+
+    } catch (e) {
+      console.log("Scan failed", e);
+    }
   });
 }
 
