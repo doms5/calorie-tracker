@@ -5,10 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FitTrack Elite v8</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<title>FitTrack Elite v8 FIX</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
@@ -22,6 +19,7 @@ body{
 }
 
 .app{max-width:430px;margin:0 auto;padding-bottom:90px;}
+
 .header{text-align:center;padding:14px;font-weight:800;}
 
 .page{display:none;}
@@ -63,14 +61,7 @@ button{
   background:linear-gradient(135deg,#ef4444,#dc2626);
 }
 
-.item{
-  display:flex;
-  justify-content:space-between;
-  padding:10px 0;
-  border-bottom:1px solid rgba(255,255,255,0.08);
-}
-
-/* TAB */
+/* NAV */
 .tabbar{
   position:fixed;
   bottom:0;
@@ -91,25 +82,26 @@ button{
 
 .tab.active{color:#38bdf8;}
 
-canvas{background:rgba(255,255,255,0.05);border-radius:12px;}
-
-.calendarGrid{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:4px;
+/* ITEMS */
+.item{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
-.day{
-  text-align:center;
-  padding:6px;
-  font-size:11px;
-  border-radius:6px;
-  background:rgba(255,255,255,0.05);
+/* MEAL CHECKLIST */
+.mealItem{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  cursor:pointer;
 }
 
-.day.active{
-  background:#38bdf8;
-  color:black;
+.small{
+  font-size:12px;
+  opacity:0.7;
 }
 
 </style>
@@ -120,7 +112,7 @@ canvas{background:rgba(255,255,255,0.05);border-radius:12px;}
 
 <div class="app">
 
-<div class="header">🔥 FitTrack Elite v8</div>
+<div class="header">🔥 FitTrack Elite v8 FIX</div>
 
 <!-- HOME -->
 <div id="home" class="page active">
@@ -128,25 +120,12 @@ canvas{background:rgba(255,255,255,0.05);border-radius:12px;}
   <div class="card">
     <div class="big" id="total">0</div>
     <div>Calories Today</div>
+
     <button class="red" onclick="resetDay()">Reset Day</button>
   </div>
 
   <div class="card">
-    <canvas id="chart" height="120"></canvas>
-  </div>
-
-</div>
-
-<!-- CALENDAR -->
-<div id="calendar" class="page">
-
-  <div class="card">
-    <div style="font-weight:700">📅 Weekly Calendar</div>
-    <div id="calGrid" class="calendarGrid"></div>
-  </div>
-
-  <div class="card">
-    <div id="dayDetails"></div>
+    <div id="list"></div>
   </div>
 
 </div>
@@ -161,13 +140,43 @@ canvas{background:rgba(255,255,255,0.05);border-radius:12px;}
 
 </div>
 
+<!-- MEAL TAB (RESTORED + IMPROVED) -->
+<div id="meals" class="page">
+
+  <div class="card">
+    <div style="font-size:22px;font-weight:800">🍽 Meal System</div>
+    <div class="small">Tap = complete • Edit = modify • Add = expand</div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700">🥣 Breakfast</div>
+    <div id="breakfast"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700">🍗 Lunch</div>
+    <div id="lunch"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700">🥩 Dinner</div>
+    <div id="dinner"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700">🍎 Snack</div>
+    <div id="snack"></div>
+  </div>
+
+</div>
+
 </div>
 
 <!-- TAB -->
 <div class="tabbar">
   <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
-  <div class="tab" onclick="nav('calendar')">Calendar</div>
+  <div class="tab" onclick="nav('meals')">Meals</div>
 </div>
 
 <script>
@@ -181,120 +190,154 @@ function save(){
   localStorage.setItem("db",JSON.stringify(db));
 }
 
-/* ======================
-   CALORIES
-====================== */
+/* =========================
+   HOME CALORIES
+========================= */
 
-function getTotal(day=today){
+function getTotal(){
   let t=0;
-  (db[day]||[]).forEach(i=>t+=Number(i.calories||0));
+  db[today].forEach(i=>t+=Number(i.calories||0));
   return t;
 }
 
 function render(){
 
-  document.getElementById("total").innerText=getTotal();
+  let total=0;
+  const el=document.getElementById("list");
 
-  drawChart();
-  sendNotification();
-}
+  el.innerHTML="";
 
-/* ======================
-   CHART (7 DAY)
-====================== */
+  db[today].forEach(i=>{
+    total+=Number(i.calories||0);
 
-function drawChart(){
-
-  const c=document.getElementById("chart");
-  const ctx=c.getContext("2d");
-
-  ctx.clearRect(0,0,c.width,c.height);
-
-  let days=[];
-  for(let i=6;i>=0;i--){
-    let d=new Date();
-    d.setDate(d.getDate()-i);
-    let key=d.toISOString().split("T")[0];
-    days.push(getTotal(key));
-  }
-
-  let max=Math.max(...days,1);
-
-  days.forEach((v,i)=>{
-
-    let h=(v/max)*100;
-
-    ctx.fillStyle="#38bdf8";
-    ctx.fillRect(i*40+10,100-h,20,h);
-
-  });
-}
-
-/* ======================
-   CALENDAR
-====================== */
-
-function renderCalendar(){
-
-  const grid=document.getElementById("calGrid");
-  grid.innerHTML="";
-
-  for(let i=6;i>=0;i--){
-
-    let d=new Date();
-    d.setDate(d.getDate()-i);
-    let key=d.toISOString().split("T")[0];
-
-    grid.innerHTML+=`
-      <div class="day ${key===today?'active':''}"
-           onclick="viewDay('${key}')">
-        ${d.getDate()}
+    el.innerHTML+=`
+      <div class="item">
+        <span>${i.name}</span>
+        <span>${i.calories}</span>
       </div>
     `;
-  }
+  });
+
+  document.getElementById("total").innerText=total;
 }
 
-function viewDay(day){
-
-  const el=document.getElementById("dayDetails");
-
-  el.innerHTML=`
-    <div class="card">
-      <div style="font-weight:700">${day}</div>
-      <div>Calories: ${getTotal(day)}</div>
-    </div>
-  `;
-}
-
-/* ======================
-   NOTIFICATIONS
-====================== */
-
-function sendNotification(){
-
-  if(!("Notification" in window)) return;
-
-  if(Notification.permission==="granted"){
-    let total=getTotal();
-    if(total<1500){
-      new Notification("FitTrack: You are under your calorie goal today.");
-    }
-  }
-}
-
-/* ======================
-   RESET
-====================== */
+/* =========================
+   RESET DAY
+========================= */
 
 function resetDay(){
   db[today]=[];
   save();
   render();
+  renderMeals();
 }
 
-/* ======================
-   SCANNER (SIMPLIFIED)
-====================== */
+/* =========================
+   MEAL SYSTEM (RESTORED + BETTER)
+========================= */
+
+let meals = JSON.parse(localStorage.getItem("meals") || "null");
+
+if(!meals){
+  meals={
+    breakfast:[
+      {name:"Eggs",calories:140,done:false},
+      {name:"Oatmeal",calories:300,done:false}
+    ],
+    lunch:[
+      {name:"Chicken Rice",calories:450,done:false}
+    ],
+    dinner:[
+      {name:"Salmon",calories:400,done:false}
+    ],
+    snack:[
+      {name:"Protein Bar",calories:180,done:false}
+    ]
+  };
+}
+
+function saveMeals(){
+  localStorage.setItem("meals",JSON.stringify(meals));
+}
+
+/* TOGGLE */
+function toggle(meal,i){
+  meals[meal][i].done=!meals[meal][i].done;
+  saveMeals();
+  renderMeals();
+}
+
+/* EDIT */
+function edit(meal,i){
+
+  let item=meals[meal][i];
+
+  let n=prompt("Edit name",item.name);
+  let c=prompt("Edit calories",item.calories);
+
+  if(n!==null) item.name=n;
+  if(c!==null) item.calories=Number(c);
+
+  saveMeals();
+  renderMeals();
+}
+
+/* ADD */
+function add(meal){
+
+  let n=prompt("Food name");
+  let c=prompt("Calories");
+
+  if(!n||!c) return;
+
+  meals[meal].push({
+    name:n,
+    calories:Number(c),
+    done:false
+  });
+
+  saveMeals();
+  renderMeals();
+}
+
+/* RENDER MEALS (FIXED) */
+function renderMeals(){
+
+  function fill(id,meal){
+
+    const el=document.getElementById(id);
+    if(!el) return;
+
+    el.innerHTML="";
+
+    meals[meal].forEach((i,idx)=>{
+
+      el.innerHTML+=`
+        <div class="mealItem"
+             style="opacity:${i.done?0.4:1};
+                    text-decoration:${i.done?'line-through':'none'}">
+
+          <span onclick="toggle('${meal}',${idx})">${i.name}</span>
+          <span onclick="toggle('${meal}',${idx})">${i.calories}</span>
+          <span style="color:#60a5fa;font-size:12px"
+                onclick="edit('${meal}',${idx})">edit</span>
+
+        </div>
+      `;
+    });
+
+    el.innerHTML+=`<button onclick="add('${meal}')">+ Add Item</button>`;
+  }
+
+  fill("breakfast","breakfast");
+  fill("lunch","lunch");
+  fill("dinner","dinner");
+  fill("snack","snack");
+}
+
+/* =========================
+   SCANNER
+========================= */
 
 let scanning=false;
 
@@ -328,7 +371,7 @@ function startScan(){
     const p=json.product||{};
 
     db[today].push({
-      name:p.product_name||"Food",
+      name:p.product_name||"Scanned Food",
       calories:Number(p?.nutriments?.["energy-kcal_100g"]||0)
     });
 
@@ -337,10 +380,7 @@ function startScan(){
   });
 }
 
-/* ======================
-   NAV
-====================== */
-
+/* NAV */
 function nav(p){
 
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
@@ -350,14 +390,8 @@ function nav(p){
 }
 
 /* INIT */
-
 render();
-renderCalendar();
-
-/* Ask notification permission */
-if("Notification" in window){
-  Notification.requestPermission();
-}
+renderMeals();
 
 </script>
 
