@@ -3,12 +3,13 @@
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitTrack Pro Elite</title>
+<title>FitTrack Elite v3</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 
@@ -24,27 +25,27 @@ body {
   text-align:center;
   padding:14px;
   font-weight:700;
-  background: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px);
   border-bottom:1px solid #eee;
 }
 
-/* PAGE SYSTEM */
-.page { display:none; padding-bottom:90px; }
+/* PAGES */
+.page { display:none; padding-bottom:100px; }
 .active { display:block; }
 
-/* GLASS CARD */
+/* CARD */
 .card {
-  background: white;
-  margin: 12px;
-  padding: 16px;
-  border-radius: 22px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  background:white;
+  margin:12px;
+  padding:16px;
+  border-radius:22px;
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
 }
 
 /* TEXT */
-.big { font-size: 38px; font-weight: 800; }
-.small { font-size: 12px; color: #777; }
+.big { font-size:38px; font-weight:800; }
+.small { font-size:12px; color:#777; }
 
 /* INPUT */
 input {
@@ -68,6 +69,7 @@ button {
 }
 
 .red { background:#ff3b30; }
+.green { background:#34c759; }
 
 /* LIST */
 .item {
@@ -89,7 +91,7 @@ button {
   left:0;
   right:0;
   display:flex;
-  background:rgba(255,255,255,0.9);
+  background:rgba(255,255,255,0.92);
   backdrop-filter: blur(20px);
   border-top:1px solid #ddd;
 }
@@ -97,20 +99,21 @@ button {
 .tab {
   flex:1;
   text-align:center;
-  padding:8px 0;
   font-size:11px;
-  font-weight:600;
+  padding:8px 0;
   color:#8e8e93;
+  font-weight:600;
 }
 
 .tab.active { color:#007aff; }
 
+/* CHART */
 canvas {
   width:100%;
-  height:120px;
+  height:180px;
 }
 
-/* CALENDAR GRID */
+/* CALENDAR */
 .grid {
   display:grid;
   grid-template-columns:repeat(7,1fr);
@@ -118,11 +121,11 @@ canvas {
 }
 
 .day {
-  background:#eee;
   padding:8px;
-  border-radius:10px;
   font-size:10px;
   text-align:center;
+  border-radius:10px;
+  background:#eee;
 }
 
 .day.good { background:#34c759; color:white; }
@@ -134,15 +137,15 @@ canvas {
 
 <body>
 
-<div class="header">🔥 FitTrack Elite</div>
+<div class="header">🔥 FitTrack Elite v3</div>
 
 <!-- HOME -->
 <div id="home" class="page active">
 
   <div class="card">
     <div class="big" id="total">0 calories</div>
-    <div class="small">Today: <span id="date"></span></div>
-    <div class="small">Streak: 🔥 <span id="streak">0</span> days</div>
+    <div class="small">📅 <span id="date"></span></div>
+    <div class="small">🔥 Streak: <span id="streak">0</span> days</div>
 
     <div style="height:10px;background:#eee;border-radius:20px;margin-top:10px;">
       <div id="bar" style="height:100%;width:0%;background:#34c759;border-radius:20px;"></div>
@@ -168,7 +171,10 @@ canvas {
   <div class="card">
     <input id="food" placeholder="Food">
     <input id="calories" type="number" placeholder="Calories">
-    <button onclick="addFood()">Add</button>
+    <input id="protein" type="number" placeholder="Protein (g)">
+    <input id="carbs" type="number" placeholder="Carbs (g)">
+    <input id="fat" type="number" placeholder="Fat (g)">
+    <button onclick="addFood()">Add Food</button>
   </div>
 
 </div>
@@ -194,16 +200,16 @@ canvas {
 
 </div>
 
-<!-- HISTORY -->
-<div id="history" class="page">
+<!-- STATS -->
+<div id="stats" class="page">
+
+  <div class="card">
+    <canvas id="chart"></canvas>
+  </div>
 
   <div class="card">
     <div class="small">Last 14 Days</div>
     <div class="grid" id="grid"></div>
-  </div>
-
-  <div class="card">
-    <canvas id="chart"></canvas>
   </div>
 
 </div>
@@ -214,7 +220,7 @@ canvas {
   <div class="tab active" onclick="nav('home',0)">🏠<br>Home</div>
   <div class="tab" onclick="nav('scan',1)">📷<br>Scan</div>
   <div class="tab" onclick="nav('meals',2)">🍽️<br>Meals</div>
-  <div class="tab" onclick="nav('history',3)">📊<br>Stats</div>
+  <div class="tab" onclick="nav('stats',3)">📊<br>Stats</div>
 
 </div>
 
@@ -223,7 +229,8 @@ canvas {
 const today = new Date().toISOString().split("T")[0];
 
 let db = JSON.parse(localStorage.getItem("db") || "{}");
-let items = db[today] || [];
+if (!db[today]) db[today] = [];
+
 let goal = 2000;
 
 /* INIT */
@@ -231,114 +238,158 @@ document.getElementById("date").innerText = today;
 
 /* SAVE */
 function save() {
-  db[today] = items;
   localStorage.setItem("db", JSON.stringify(db));
+}
+
+/* TODAY DATA */
+function items() {
+  return db[today];
+}
+
+/* ADD FOOD */
+function addFood(name, cal, p=0, c=0, f=0) {
+
+  const food = name || document.getElementById("food").value;
+  const calories = cal || document.getElementById("calories").value;
+
+  db[today].push({
+    name: food,
+    calories: Number(calories),
+    protein: Number(p || document.getElementById("protein").value || 0),
+    carbs: Number(c || document.getElementById("carbs").value || 0),
+    fat: Number(f || document.getElementById("fat").value || 0)
+  });
+
+  save();
+  render();
+}
+
+/* DELETE */
+function del(i) {
+  db[today].splice(i,1);
+  save();
+  render();
+}
+
+/* RESET */
+function resetDay() {
+  db[today] = [];
+  save();
+  render();
 }
 
 /* RENDER */
 function render() {
 
-  let total = 0;
   let list = document.getElementById("list");
   list.innerHTML = "";
 
-  items.forEach((i, index) => {
+  let total = 0, p=0, c=0, f=0;
+
+  db[today].forEach((i, index) => {
+
     total += i.calories;
+    p += i.protein;
+    c += i.carbs;
+    f += i.fat;
 
     list.innerHTML += `
       <div class="item">
         <span>${i.name}</span>
-        <span>${i.calories}</span>
+        <span>${i.calories} cal</span>
         <span class="delete" onclick="del(${index})">x</span>
       </div>
     `;
   });
 
   document.getElementById("total").innerText = total + " calories";
+
   document.getElementById("bar").style.width =
     Math.min((total/goal)*100,100) + "%";
 
-  save();
   updateStreak();
-  renderHistory();
+  renderStats();
+  renderChart();
 }
-
-/* ADD */
-function addFood(name, cal) {
-  const food = name || document.getElementById("food").value;
-  const calories = cal || document.getElementById("calories").value;
-
-  items.push({ name: food, calories: Number(calories) });
-
-  document.getElementById("food").value = "";
-  document.getElementById("calories").value = "";
-
-  render();
-}
-
-/* DELETE */
-function del(i) {
-  items.splice(i,1);
-  render();
-}
-
-/* RESET */
-function resetDay() {
-  items = [];
-  render();
-}
-
-/* MEALS */
-function meal(n,c){ addFood(n,c); }
 
 /* STREAK */
 function updateStreak() {
   let streak = 0;
-  const keys = Object.keys(db).sort();
+  let keys = Object.keys(db).sort();
 
-  for (let i = keys.length-1; i>=0; i--) {
-    let sum = db[keys[i]].reduce((a,b)=>a+b.calories,0);
-    if (sum <= goal) streak++;
+  for (let i=keys.length-1;i>=0;i--) {
+    let t = db[keys[i]].reduce((a,b)=>a+b.calories,0);
+    if (t <= goal) streak++;
     else break;
   }
 
   document.getElementById("streak").innerText = streak;
 }
 
-/* HISTORY GRID */
-function renderHistory() {
+/* CALENDAR GRID */
+function renderStats() {
   let grid = document.getElementById("grid");
   if (!grid) return;
 
   grid.innerHTML = "";
 
-  let keys = Object.keys(db).sort().slice(-14);
+  Object.keys(db).slice(-14).forEach(d => {
 
-  keys.forEach(d => {
-    let total = db[d].reduce((a,b)=>a+b.calories,0);
+    let t = db[d].reduce((a,b)=>a+b.calories,0);
 
     let div = document.createElement("div");
-    div.className = "day " + (total<=goal ? "good":"bad");
+    div.className = "day " + (t<=goal ? "good":"bad");
     div.innerText = d.split("-")[2];
 
     grid.appendChild(div);
   });
 }
 
+/* CHART */
+function renderChart() {
+
+  let ctx = document.getElementById("chart");
+  if (!ctx) return;
+
+  let keys = Object.keys(db).slice(-7);
+
+  let data = keys.map(d =>
+    db[d].reduce((a,b)=>a+b.calories,0)
+  );
+
+  new Chart(ctx, {
+    type:"line",
+    data:{
+      labels:keys.map(k=>k.split("-")[2]),
+      datasets:[{
+        label:"Calories",
+        data:data,
+        borderColor:"#007aff"
+      }]
+    }
+  });
+
+}
+
+/* MEAL */
+function meal(n,c){ addFood(n,c); }
+
 /* SCAN */
 function startScan() {
+
   const scanner = document.getElementById("scanner");
   scanner.innerHTML = "";
 
   Quagga.init({
-    inputStream: { type:"LiveStream", target:scanner },
-    decoder: { readers:["ean_reader","upc_reader"] }
+    inputStream:{ type:"LiveStream", target:scanner },
+    decoder:{ readers:["ean_reader","upc_reader"] }
   }, err => {
     if (err) return alert(err);
     Quagga.start();
   });
 
   Quagga.onDetected(async data => {
+
     const code = data.codeResult.code;
     Quagga.stop();
 
@@ -363,6 +414,10 @@ function nav(page, i) {
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   event.currentTarget.classList.add("active");
 
+  if(page==="stats") {
+    renderStats();
+    renderChart();
+  }
 }
 
 render();
