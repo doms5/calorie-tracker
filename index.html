@@ -11,10 +11,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<!-- iPhone home screen icon -->
 <link rel="apple-touch-icon" href="icon.png">
 
-<!-- Barcode scanner -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <style>
@@ -108,6 +106,20 @@ button.red { background: #ff3b30; }
   overflow: hidden;
   margin-top: 10px;
 }
+
+/* CONFIRM SHEET (MyFitnessPal style) */
+#confirmBox {
+  display:none;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:white;
+  padding:20px;
+  border-top-left-radius:20px;
+  border-top-right-radius:20px;
+  box-shadow:0 -2px 20px rgba(0,0,0,0.2);
+}
 </style>
 
 </head>
@@ -147,6 +159,17 @@ button.red { background: #ff3b30; }
 <!-- SCANNER -->
 <div class="card">
   <div id="scanner"></div>
+</div>
+
+<!-- CONFIRM SHEET -->
+<div id="confirmBox">
+  <h3>Confirm Food</h3>
+
+  <input id="confirmName" style="width:100%;padding:10px;margin-bottom:10px;border-radius:10px;border:1px solid #ddd;">
+  <input id="confirmCalories" type="number" style="width:100%;padding:10px;margin-bottom:10px;border-radius:10px;border:1px solid #ddd;">
+
+  <button onclick="confirmAdd()" class="green">Add Food</button>
+  <button onclick="closeConfirm()" class="red">Cancel</button>
 </div>
 
 <script>
@@ -202,7 +225,10 @@ function resetDay() {
   render();
 }
 
-/* BARCODE SCANNER */
+/* =========================
+   BARCODE SCANNER (FIXED)
+========================= */
+
 function scan() {
   const scanner = document.getElementById("scanner");
   scanner.innerHTML = "";
@@ -214,18 +240,11 @@ function scan() {
     inputStream: {
       type: "LiveStream",
       target: scanner,
-      constraints: {
-        facingMode: "environment"
-      }
-    },
-    locator: {
-      patchSize: "medium",
-      halfSample: true
+      constraints: { facingMode: "environment" }
     },
     decoder: {
       readers: ["ean_reader", "upc_reader"]
-    },
-    locate: true
+    }
   }, function(err) {
     if (err) {
       alert("Camera error");
@@ -243,29 +262,53 @@ function scan() {
     lastCode = code;
     lastTime = now;
 
+    Quagga.stop();
+
     try {
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
       const json = await res.json();
+
       const p = json.product || {};
 
-      const name =
-        p.product_name ||
-        p.generic_name ||
-        "Unknown Food";
+      const name = p.product_name || "Unknown Food";
 
       const calories =
+        p?.nutriments?.["energy-kcal_serving"] ||
         p?.nutriments?.["energy-kcal_100g"] ||
-        p?.nutriments?.energy_kcal_100g ||
         0;
 
-      addFood(name, calories);
-
-      navigator.vibrate?.(100);
+      openConfirm(name, calories);
 
     } catch (e) {
-      console.log("Scan failed", e);
+      alert("Scan failed");
     }
   });
+}
+
+/* =========================
+   CONFIRM SHEET
+========================= */
+
+function openConfirm(name, calories) {
+  document.getElementById("confirmName").value = name;
+  document.getElementById("confirmCalories").value = calories;
+
+  document.getElementById("confirmBox").style.display = "block";
+}
+
+function closeConfirm() {
+  document.getElementById("confirmBox").style.display = "none";
+}
+
+function confirmAdd() {
+  const name = document.getElementById("confirmName").value;
+  const calories = document.getElementById("confirmCalories").value;
+
+  addFood(name, calories);
+
+  closeConfirm();
+
+  setTimeout(() => scan(), 500);
 }
 
 render();
