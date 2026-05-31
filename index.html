@@ -108,6 +108,7 @@ button {
 
 .tab.active { color:#38bdf8; }
 
+/* MEAL CHECKLIST */
 .mealItem{
   display:flex;
   justify-content:space-between;
@@ -119,6 +120,11 @@ button {
 .mealItem:active{
   transform:scale(0.98);
   opacity:0.7;
+}
+
+.smallAction{
+  color:#60a5fa;
+  font-size:12px;
 }
 
 </style>
@@ -142,7 +148,8 @@ button {
       📅 <span id="date"></span>
     </div>
 
-    <input id="goal" type="number" placeholder="Daily goal (default 2000)">
+    <!-- RESET BUTTON (RESTORED HERE) -->
+    <button class="red" onclick="resetDay()">Reset Day</button>
   </div>
 
   <div class="card">
@@ -174,40 +181,30 @@ button {
 <div id="meals" class="page">
 
   <div class="card">
-    <div class="big">🍽 Meal Plan</div>
+    <div class="big">🍽 Meal Checklist</div>
     <div style="font-size:12px;opacity:0.7">
-      Tap items to log instantly
+      Tap = complete • Edit = modify
     </div>
-  </div>
-
-  <!-- SMART -->
-  <div class="card">
-    <div style="font-weight:700">🧠 Smart Suggestions</div>
-    <div id="suggestions"></div>
   </div>
 
   <div class="card">
     <div style="font-weight:700">🥣 Breakfast</div>
-    <div id="bList"></div>
+    <div id="breakfast"></div>
   </div>
 
   <div class="card">
     <div style="font-weight:700">🍗 Lunch</div>
-    <div id="lList"></div>
+    <div id="lunch"></div>
   </div>
 
   <div class="card">
     <div style="font-weight:700">🥩 Dinner</div>
-    <div id="dList"></div>
+    <div id="dinner"></div>
   </div>
 
   <div class="card">
     <div style="font-weight:700">🍎 Snack</div>
-    <div id="sList"></div>
-  </div>
-
-  <div class="card">
-    <button class="red" onclick="resetDay()">Reset Day</button>
+    <div id="snack"></div>
   </div>
 
 </div>
@@ -235,11 +232,6 @@ function save(){
   localStorage.setItem("db", JSON.stringify(db));
 }
 
-/* GOAL */
-function getGoal(){
-  return Number(document.getElementById("goal").value || 2000);
-}
-
 /* TOTAL */
 function getTotal(){
   let t = 0;
@@ -260,7 +252,7 @@ function addManual(){
 
   save();
   render();
-  renderMealTab();
+  renderChecklist();
 }
 
 /* DELETE */
@@ -268,18 +260,18 @@ function del(i){
   db[today].splice(i,1);
   save();
   render();
-  renderMealTab();
+  renderChecklist();
 }
 
-/* RESET DAY (RESTORED) */
+/* RESET DAY */
 function resetDay(){
   db[today] = [];
   save();
   render();
-  renderMealTab();
+  renderChecklist();
 }
 
-/* RENDER HOME */
+/* HOME RENDER */
 function render(){
 
   let total = 0;
@@ -303,99 +295,112 @@ function render(){
 }
 
 /* =========================
-   MEAL SYSTEM
+   CHECKLIST SYSTEM (FULL)
 ========================= */
 
-const meals = {
-  breakfast:[
-    {name:"Eggs",calories:140},
-    {name:"Oatmeal",calories:300}
-  ],
-  lunch:[
-    {name:"Chicken Rice",calories:450},
-    {name:"Turkey Sandwich",calories:350}
-  ],
-  dinner:[
-    {name:"Salmon",calories:400}
-  ],
-  snack:[
-    {name:"Protein Bar",calories:180}
-  ]
-};
+let checklist = JSON.parse(localStorage.getItem("checklist") || "null");
 
-/* LOG FOOD */
-function logMeal(name,calories){
-
-  db[today].push({
-    name,
-    calories,
-    protein:0,
-    carbs:0,
-    fat:0
-  });
-
-  save();
-  render();
-  renderMealTab();
+if(!checklist){
+  checklist = {
+    breakfast:[
+      {name:"Eggs",calories:140,done:false},
+      {name:"Oatmeal",calories:300,done:false}
+    ],
+    lunch:[
+      {name:"Chicken Rice",calories:450,done:false}
+    ],
+    dinner:[
+      {name:"Salmon",calories:400,done:false}
+    ],
+    snack:[
+      {name:"Protein Bar",calories:180,done:false}
+    ]
+  };
 }
 
-/* SMART SUGGESTIONS */
-function renderSuggestions(){
-
-  const remaining = getGoal() - getTotal();
-  const box = document.getElementById("suggestions");
-
-  if(!box) return;
-
-  box.innerHTML = "";
-
-  if(remaining <= 0){
-    box.innerHTML = "🎉 Goal reached";
-    return;
-  }
-
-  const smart = [
-    {name:"Eggs + Toast",calories:260},
-    {name:"Chicken Bowl",calories:450},
-    {name:"Protein Shake",calories:180},
-    {name:"Salmon Plate",calories:400}
-  ].filter(m => m.calories <= remaining + 150);
-
-  smart.slice(0,4).forEach(m=>{
-    box.innerHTML += `
-      <div class="mealItem" onclick="logMeal('${m.name}',${m.calories})">
-        <span>${m.name}</span>
-        <span>${m.calories}</span>
-      </div>
-    `;
-  });
+function saveChecklist(){
+  localStorage.setItem("checklist", JSON.stringify(checklist));
 }
 
-/* RENDER MEALS */
-function renderMealTab(){
+function toggleItem(meal,i){
+  checklist[meal][i].done = !checklist[meal][i].done;
+  saveChecklist();
+  renderChecklist();
+}
 
-  function fill(id, arr){
-    const el = document.getElementById(id);
+function editItem(meal,i){
+
+  let item = checklist[meal][i];
+
+  let n = prompt("Edit name",item.name);
+  let c = prompt("Edit calories",item.calories);
+
+  if(n!==null) item.name=n;
+  if(c!==null) item.calories=Number(c);
+
+  saveChecklist();
+  renderChecklist();
+}
+
+function addItem(meal){
+
+  let n = prompt("Food name:");
+  let c = prompt("Calories:");
+
+  if(!n || !c) return;
+
+  checklist[meal].push({
+    name:n,
+    calories:Number(c),
+    done:false
+  });
+
+  saveChecklist();
+  renderChecklist();
+}
+
+function renderChecklist(){
+
+  function fill(id,meal){
+
+    let el=document.getElementById(id);
     if(!el) return;
 
-    el.innerHTML = "";
+    el.innerHTML="";
 
-    arr.forEach(i=>{
+    checklist[meal].forEach((i,idx)=>{
+
       el.innerHTML += `
-        <div class="mealItem" onclick="logMeal('${i.name}',${i.calories})">
-          <span>${i.name}</span>
-          <span>${i.calories}</span>
+        <div class="mealItem"
+             style="
+               opacity:${i.done?0.4:1};
+               text-decoration:${i.done?'line-through':'none'};
+             ">
+
+          <span onclick="toggleItem('${meal}',${idx})">
+            ${i.name}
+          </span>
+
+          <span onclick="toggleItem('${meal}',${idx})">
+            ${i.calories}
+          </span>
+
+          <span class="smallAction"
+                onclick="editItem('${meal}',${idx})">
+            edit
+          </span>
+
         </div>
       `;
     });
+
+    el.innerHTML += `<button onclick="addItem('${meal}')">+ Add</button>`;
   }
 
-  fill("bList",meals.breakfast);
-  fill("lList",meals.lunch);
-  fill("dList",meals.dinner);
-  fill("sList",meals.snack);
-
-  renderSuggestions();
+  fill("breakfast","breakfast");
+  fill("lunch","lunch");
+  fill("dinner","dinner");
+  fill("snack","snack");
 }
 
 /* SCANNER */
@@ -416,17 +421,18 @@ function startScan(){
     Quagga.start();
   });
 
-  Quagga.onDetected(async data=>{
+  Quagga.onDetected(async d=>{
 
     if(!scanning) return;
     scanning=false;
 
     Quagga.stop();
 
-    const code=data.codeResult.code;
+    const code=d.codeResult.code;
 
     const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
     const json=await res.json();
+
     const p=json.product||{};
 
     db[today].push({
@@ -439,7 +445,7 @@ function startScan(){
 
     save();
     render();
-    renderMealTab();
+    renderChecklist();
   });
 }
 
@@ -451,7 +457,7 @@ function nav(p){
 
 /* INIT */
 render();
-renderMealTab();
+renderChecklist();
 
 </script>
 
