@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FitTrack Pro</title>
 
-<link rel="manifest" href="manifest.json">
-
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -28,9 +26,11 @@ body {
   border-bottom: 1px solid #eee;
 }
 
+/* PAGES */
 .page { display:none; padding-bottom: 90px; }
 .active { display:block; }
 
+/* CARD */
 .card {
   background: white;
   margin: 12px;
@@ -49,18 +49,16 @@ body {
   color: #777;
 }
 
-.progress {
-  height: 10px;
-  background: #eee;
-  border-radius: 20px;
+/* INPUT */
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
 }
 
-.fill {
-  height: 100%;
-  width: 0%;
-  background: #34c759;
-}
-
+/* BUTTON */
 button {
   width: 100%;
   padding: 12px;
@@ -73,6 +71,20 @@ button {
 }
 
 .red { background:#ff3b30; }
+
+/* PROGRESS */
+.progress {
+  height: 10px;
+  background: #e5e5ea;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  width: 0%;
+  background: #34c759;
+}
 
 /* LIST */
 .item {
@@ -88,7 +100,7 @@ button {
   cursor:pointer;
 }
 
-/* TAB */
+/* TAB BAR */
 .tabbar {
   position: fixed;
   bottom: 0;
@@ -102,9 +114,10 @@ button {
 .tab {
   flex:1;
   text-align:center;
-  line-height:60px;
-  font-weight:600;
+  padding:10px 0;
+  font-size:12px;
   color:#888;
+  font-weight:600;
 }
 
 .tab.active {
@@ -125,17 +138,22 @@ button {
   <div class="card">
     <div class="big" id="total">0 calories</div>
 
-    <div class="small">Daily Goal: 2000</div>
+    <div class="small">
+      📅 Today: <span id="dateLabel"></span>
+    </div>
 
-    <div class="progress">
+    <div class="small" style="margin-top:6px;">
+      🎯 Goal:
+      <input id="goalInput" type="number" onchange="updateGoal()" style="width:90px;display:inline-block;">
+    </div>
+
+    <div class="progress" style="margin-top:10px;">
       <div class="fill" id="bar"></div>
     </div>
 
-    <!-- RESET BUTTON (RESTORED) -->
     <button class="red" onclick="resetDay()" style="margin-top:10px;">
       Reset Day
     </button>
-
   </div>
 
   <div class="card">
@@ -177,7 +195,6 @@ button {
     <label><input type="checkbox" onchange="meal('Salmon',300)"> Salmon</label><br>
     <label><input type="checkbox" onchange="meal('Veggies',80)"> Veggies</label>
 
-    <!-- SNACK RESTORED -->
     <h3>Snack</h3>
     <label><input type="checkbox" onchange="meal('Protein Bar',180)"> Protein Bar</label><br>
     <label><input type="checkbox" onchange="meal('Fruit',90)"> Fruit</label>
@@ -186,17 +203,38 @@ button {
 
 </div>
 
-<!-- TAB -->
+<!-- TAB BAR -->
 <div class="tabbar">
+
   <div class="tab active" onclick="nav('home')">Home</div>
   <div class="tab" onclick="nav('scan')">Scan</div>
   <div class="tab" onclick="nav('meals')">Meals</div>
+
 </div>
 
 <script>
 
+const today = new Date().toISOString().split("T")[0];
+
 let items = JSON.parse(localStorage.getItem("foods") || "[]");
-const GOAL = 2000;
+let goal = Number(localStorage.getItem("goal") || 2000);
+
+/* INIT */
+document.getElementById("dateLabel").innerText = today;
+document.getElementById("goalInput").value = goal;
+
+/* SAVE */
+function save() {
+  localStorage.setItem("foods", JSON.stringify(items));
+  localStorage.setItem("goal", goal);
+}
+
+/* UPDATE GOAL */
+function updateGoal() {
+  goal = Number(document.getElementById("goalInput").value);
+  save();
+  render();
+}
 
 /* RENDER */
 function render() {
@@ -218,12 +256,12 @@ function render() {
 
   document.getElementById("total").innerText = total + " calories";
   document.getElementById("bar").style.width =
-    Math.min((total/GOAL)*100,100) + "%";
+    Math.min((total / goal) * 100, 100) + "%";
 
-  localStorage.setItem("foods", JSON.stringify(items));
+  save();
 }
 
-/* ADD */
+/* ADD FOOD */
 function addFood(name, cal) {
   const food = name || document.getElementById("food").value;
   const calories = cal || document.getElementById("calories").value;
@@ -238,13 +276,13 @@ function addFood(name, cal) {
   render();
 }
 
-/* DELETE SINGLE ITEM (FIXED) */
+/* DELETE */
 function deleteItem(index) {
   items.splice(index, 1);
   render();
 }
 
-/* RESET DAY (FIXED) */
+/* RESET DAY */
 function resetDay() {
   items = [];
   render();
@@ -253,34 +291,6 @@ function resetDay() {
 /* MEALS */
 function meal(name, cal) {
   addFood(name, cal);
-}
-
-/* SCAN */
-function startScan() {
-  const scanner = document.getElementById("scanner");
-  scanner.innerHTML = "";
-
-  Quagga.init({
-    inputStream: { type:"LiveStream", target:scanner },
-    decoder: { readers:["ean_reader","upc_reader"] }
-  }, err => {
-    if (err) return alert(err);
-    Quagga.start();
-  });
-
-  Quagga.onDetected(async data => {
-    const code = data.codeResult.code;
-    Quagga.stop();
-
-    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
-    const json = await res.json();
-    const p = json.product || {};
-
-    addFood(
-      p.product_name || "Food",
-      p?.nutriments?.["energy-kcal_100g"] || 0
-    );
-  });
 }
 
 /* NAV */
@@ -292,6 +302,7 @@ function nav(page) {
   event.currentTarget.classList.add("active");
 }
 
+/* RENDER INIT */
 render();
 
 </script>
