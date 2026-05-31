@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="manifest" href="manifest.json">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitTrack</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitTrack</title>
+<!-- iPhone home screen icon -->
+<link rel="apple-touch-icon" href="icon.png">
 
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
+<!-- Barcode scanner -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 
 <style>
@@ -98,7 +100,16 @@ button.red { background: #ff3b30; }
   font-size: 12px;
   color: #888;
 }
+
+#scanner {
+  width: 100%;
+  height: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 10px;
+}
 </style>
+
 </head>
 
 <body>
@@ -108,7 +119,7 @@ button.red { background: #ff3b30; }
 <!-- DASHBOARD -->
 <div class="card">
   <div class="title">Today’s Calories</div>
-  <div class="big" id="total">0</div>
+  <div class="big" id="total">0 calories</div>
 
   <div class="small">Goal: <span id="goalText">2000</span> calories</div>
 
@@ -140,7 +151,7 @@ button.red { background: #ff3b30; }
 
 <script>
 
-let items = JSON.parse(localStorage.getItem("foods") || "[]")
+let items = JSON.parse(localStorage.getItem("foods") || "[]");
 const GOAL = 2000;
 
 function render() {
@@ -154,12 +165,12 @@ function render() {
     list.innerHTML += `
       <div class="item">
         <span>${i.name}</span>
-        <span>${i.calories} cal</span>
+        <span>${i.calories} calories</span>
       </div>
     `;
   });
 
-  document.getElementById("total").innerText = total;
+  document.getElementById("total").innerText = total + " calories";
   document.getElementById("goalText").innerText = GOAL;
 
   let percent = Math.min((total / GOAL) * 100, 100);
@@ -197,17 +208,22 @@ function scan() {
     inputStream: {
       type: "LiveStream",
       target: document.querySelector("#scanner"),
-      constraints: { facingMode: "environment" }
+      constraints: {
+        facingMode: "environment"
+      }
     },
     decoder: {
       readers: ["ean_reader", "upc_reader"]
     }
-  }, err => {
-    if (err) return alert(err);
+  }, function(err) {
+    if (err) {
+      alert(err);
+      return;
+    }
     Quagga.start();
   });
 
-  Quagga.onDetected(async data => {
+  Quagga.onDetected(async function(data) {
     const code = data.codeResult.code;
     Quagga.stop();
 
